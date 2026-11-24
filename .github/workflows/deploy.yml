@@ -16,7 +16,7 @@ jobs:
     name: Vulnerability & Malware Scan (Trivy)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -31,7 +31,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - id: auth
         uses: google-github-actions/auth@v3
@@ -40,7 +40,7 @@ jobs:
           service_account: 'github-deployer@pub-quiz-ai-sandbox.iam.gserviceaccount.com'
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v3
 
       - name: Build and Push Container
         run: |
