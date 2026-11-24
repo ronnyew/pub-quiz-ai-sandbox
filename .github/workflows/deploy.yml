@@ -1,0 +1,57 @@
+name: Security Scan & Deploy to Cloud Run
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  id-token: write
+  security-events: write
+
+jobs:
+  security-scan:
+    name: Vulnerability & Malware Scan (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+  deploy:
+    name: Deploy to Cloud Run
+    needs: security-scan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: 'projects/142740246271/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-deployer@pub-quiz-ai-sandbox.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and Push Container
+        run: |
+          gcloud builds submit --tag australia-southeast1-docker.pkg.dev/pub-quiz-ai-sandbox/pub-quiz-repo/quiz-app:${{ github.sha }}
+
+      - name: Deploy to Cloud Run (Scale-to-Zero)
+        run: |
+          gcloud run deploy quiz-app \
+            --image australia-southeast1-docker.pkg.dev/pub-quiz-ai-sandbox/pub-quiz-repo/quiz-app:${{ github.sha }} \
+            --region australia-southeast1 \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --max-instances 2
