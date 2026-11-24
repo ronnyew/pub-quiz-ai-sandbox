@@ -1,0 +1,10 @@
+---
+description: Core architecture, security, cost guardrails, and Paul Duvall lifecycle rules
+alwaysApply: true
+---
+# Core Architecture & Guardrails
+- **Stack:** Node.js 24, Express, Cloud Firestore (`@google-cloud/firestore`), FirebaseUI Auth, Tailwind CSS v4 + DaisyUI v5 CDN (`@tailwindcss/browser@4` and `daisyui@5`).
+- **Database Isolation:** Keep all Firestore queries in `db.js` with an in-memory mock when `process.env.NODE_ENV === 'test'` so `npm test` runs offline without GCP credentials.
+- **Anti-Cheat Split:** Public room state lives in `game_rooms/{roomId}` (never include `correctAnswerId` or `explanation`). Answer keys live exclusively in `game_room_secrets/{roomId}` and are graded server-side.
+- **Auth & Future Admin SSO:** Route all identity checks through `auth.js`. Support FirebaseUI (Google, SMS, Apple, Anonymous Guest) for players, and read `ADMIN_ALLOWED_DOMAIN` / `ADMIN_EMAILS` from `process.env` (never hardcode secrets).
+- **Producer != Grader:** Never self-certify a completed slice in the same chat that wrote it; always run `/evaluate-slice` in a fresh chat before committing.

@@ -1,6 +1,9 @@
-node_modules
-.git
-.github
+node_modules/
+.git/
+.github/
+.cursor/
+specs/
+design/
+test/
 .env*
 *.md
-gha-creds-*.json

@@ -1,0 +1,11 @@
+---
+description: Enforce Neon Tokyo player theme, navigation rules, and light-mode Admin theme contracts
+globs: ["index.js", "public/**/*", "routes/**/*"]
+alwaysApply: false
+---
+# Dual-Surface Design System & Navigation Rules
+- **Player Surface (`/`):** Read `@design/player/` first. Define `[data-theme="taproom"]` CSS variables matching Neon Tokyo (`#050811` / `#0a0a12` canvas, `#0c101c` / `#141422` cards, `#ff2d78` primary neon pink, `#00ffcc` cyan telemetry, `#9d4edd` / `#ffe04a` tertiary accents, `Sora`, `Space Grotesk` & `Inter` Google Fonts) and set `data-theme="taproom"` on `<html>`.
+- **Auth-Aware Brand Logo:** The `PUB QUIZ` logo in the top header MUST link to `/` (Landing/Gateway) when unauthenticated and `/dashboard` (Player Dashboard) when logged in.
+- **Static Legal Pages (FR-12):** Never render Terms & Conditions or Privacy Policy as a modal. Footer links (`TERMS & CONDITIONS`, `PRIVACY POLICY`) MUST route to dedicated server/templated static content pages (`/terms` and `/privacy`) modeled on `@design/player/static_content/code.html` (backed by configurable static content storage so the future Admin Portal can edit them).
+- **Admin Surface (`/admin`):** Use `[data-theme="admin"]` (white `#ffffff` canvas, `#f8fafc` slate sidebar/tables, `#4f46e5` primary actions) and read `@design/admin/` when present.
+- **Components:** Use DaisyUI v5 semantic classes (`card`, `btn`, `badge`, `tabs`, `progress`, `modal`, `table`) layered with Tailwind v4 utilities. Keep layouts mobile-first (390px) and desktop-ready (1440px).
