@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #ff2d78;
+  --color-secondary: #00ffcc;
+  --color-tertiary: #ffe04a;
+  --color-background: #0a0a12;
+  --color-surface: #0f0f1a;
+  --color-surface-container: #141422;
+  --font-headline: "Sora", sans-serif;
+  --font-display: "Sora", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-label: "Space Grotesk", monospace, sans-serif;
+}
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: "Inter", sans-serif;
+    overscroll-behavior: none;
+  }
+
+  main > :first-child {
+    margin-top: 0 !important;
+  }
+
+  main > :last-child {
+    margin-bottom: 0 !important;
+  }
+}
+
+[data-theme="taproom"] {
+  --canvas: #050811;
+  --canvas-deep: #0a0a12;
+  --surface: #0c101c;
+  --surface-elevated: #141422;
+  --primary: #ff2d78;
+  --secondary: #00ffcc;
+  --tertiary: #9d4edd;
+  --tertiary-warm: #ffe04a;
+  --border: #1e293b;
+  color-scheme: dark;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+.crt-matrix {
+  background-color: var(--canvas, #050811);
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(255, 45, 120, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(0, 255, 204, 0.08) 0%, transparent 40%),
+    linear-gradient(rgba(30, 41, 59, 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+}
+
+.cyber-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 45, 120, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 255, 204, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.neon-glow-pink {
+  box-shadow:
+    0 0 25px rgba(255, 45, 120, 0.4),
+    inset 0 0 15px rgba(255, 45, 120, 0.2);
+}
+
+.neon-glow-cyan {
+  box-shadow:
+    0 0 25px rgba(0, 255, 204, 0.35),
+    inset 0 0 10px rgba(0, 255, 204, 0.15);
+}
+
+.neon-border-pink {
+  border: 1px solid #ff2d78;
+  box-shadow:
+    0 0 15px rgba(255, 45, 120, 0.35),
+    inset 0 0 10px rgba(255, 45, 120, 0.15);
+}
+
+.neon-border-cyan {
+  border: 1px solid #00ffcc;
+  box-shadow:
+    0 0 15px rgba(0, 255, 204, 0.35),
+    inset 0 0 10px rgba(0, 255, 204, 0.15);
+}
+
+.hud-bracket {
+  position: relative;
+}
+
+.hud-bracket::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #00ffcc;
+  border-left: 2px solid #00ffcc;
+}
+
+.hud-bracket::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-bottom: 2px solid #ff2d78;
+  border-right: 2px solid #ff2d78;
+}
+
+@keyframes soundwave {
+  0%,
+  100% {
+    height: 6px;
+  }
+
+  50% {
+    height: 32px;
+  }
+}
+
+.wave-bar {
+  animation: soundwave 1.2s ease-in-out infinite;
+}
+
+.match-row:hover .row-arrow {
+  opacity: 1;
+  transform: translateX(4px);
+}
+
+.row-arrow {
+  opacity: 0.35;
+  transform: translateX(0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Stitch font stacks — explicit so fonts apply before/without Tailwind utility codegen */
+.font-headline,
+.font-display {
+  font-family: "Sora", sans-serif;
+}
+
+.font-body {
+  font-family: "Inter", sans-serif;
+}
+
+.font-label {
+  font-family: "Space Grotesk", monospace, sans-serif;
+}
+
+/* Static legal Markdown lists — Stitch cyan telemetry bullets (no post-sanitize HTML regex) */
+.content-markdown > ul.static-content-ul {
+  background-color: #0f0f1a;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.content-markdown ul.static-content-ul ul.static-content-ul,
+.content-markdown ul.static-content-ul ol.static-content-ol,
+.content-markdown ol.static-content-ol ul.static-content-ul,
+.content-markdown ol.static-content-ol ol.static-content-ol {
+  background-color: transparent;
+  margin: 0.5rem 0 0;
+  padding: 0 0 0 1.5rem;
+}
+
+.content-markdown ul.static-content-ul li.static-content-li {
+  position: relative;
+  padding-left: 1.25rem;
+  list-style: none;
+}
+
+.content-markdown ul.static-content-ul li.static-content-li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.375rem;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  background-color: #00ffcc;
+  box-shadow: 0 0 8px #00ffcc;
+}
+
+.content-markdown ul.static-content-ul li.static-content-li strong {
+  font-family: "Sora", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: #ffffff;
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .content-markdown ul.static-content-ul li.static-content-li strong {
+    display: inline;
+  }
+}
+
+.content-markdown ol.static-content-ol {
+  list-style-position: outside;
+  padding-left: 1.75rem;
+  color: #a098b0;
+}
+
+.content-markdown ol.static-content-ol li.static-content-li {
+  display: list-item;
+  padding-left: 0.35rem;
+}
+
+.content-markdown ol.static-content-ol li.static-content-li::marker {
+  color: #00ffcc;
+  font-weight: 700;
+  font-family: "Space Grotesk", monospace, sans-serif;
+}
+
+.content-markdown ul.static-content-ul ol.static-content-ol li.static-content-li::before {
+  content: none;
+}

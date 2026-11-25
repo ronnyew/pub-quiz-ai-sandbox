@@ -167,7 +167,7 @@
   "Question": {
     "questionId": "7656",
     "topicPackId": "45634",
-    "category": "Bavarian History"
+    "category": "Bavarian History",
     "tags": ["beer", "history", "germany", "regulations"],
     "difficultyRating": "MEDIUM",
     "basePoints": 10,
@@ -181,8 +181,11 @@
     "correctAnswerId": "A",
     "explanation": "The Reinheitsgebot was adopted in Bavaria in 1516 by Duke Wilhelm IV, restricting brewing ingredients to water, barley, and hops (yeast was discovered later).",
     "sourceCitations": [
-{“title”:"German Brewers Association Historical Codex",”link”:”https://www.examplelink.com”}
-	]
+      {
+        "title": "German Brewers Association Historical Codex",
+        "link": "https://www.examplelink.com"
+      }
+    ]
   },
 
   "PlayerResponse": {

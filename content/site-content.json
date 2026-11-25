@@ -1,0 +1,40 @@
+{
+  "static_copy": {
+    "gateway": {
+      "screen_title": "Gateway",
+      "hero_line_before": "The Smartest",
+      "hero_highlight": "Pub Quiz",
+      "hero_line_after": "On The Web.",
+      "subtitle": "Real-time trivia with neon Tokyo telemetry. Sign-in and live rooms arrive in the next slices — explore the shell today.",
+      "join_card_title": "Join Or Host",
+      "pin_label": "Enter Room PIN",
+      "pin_placeholder": "000000",
+      "join_button_label": "Join Room (Coming Soon)",
+      "host_button_label": "Host A Game (Coming Soon)"
+    },
+    "footer": {
+      "status_text": "© 2024 / ONLINE"
+    },
+    "legal_menu_label": "MENU"
+  },
+  "footer_links": [
+    {
+      "path": "terms",
+      "title": "Terms and Conditions",
+      "headline_primary": "Terms and",
+      "headline_accent": "Conditions",
+      "date_label": "OCT 2024",
+      "leading_paragraph": "Effective Date: October 2024. These Terms govern your access to Pub Quiz live trivia sessions and related services.",
+      "content": "## Acceptance & Eligibility\n\nBy creating a screen name, joining a room PIN, or hosting a session you agree to these Terms. You must be at least **13 years old** or have guardian consent where required by law.\n\n### Ways to participate\n\n1. Continue as a guest with an anonymous session.\n2. Sign in with a federated identity provider.\n3. Enter a valid six-digit room PIN supplied by a host.\n\n## Gameplay & Fair Play\n\nAnswer submissions are scored using **server-side timestamps**. Attempting to manipulate timers, share answer keys during an active round, or disrupt other players may result in removal from a room.\n\n- Respect other players and hosts.\n- Do not automate answer submissions.\n- Report suspected cheating to [support@pubquiz.app](mailto:support@pubquiz.app).\n\n## Telemetry We Record\n\nWe log *latency measurements*, ephemeral match metadata, and leaderboard aggregates needed to operate real-time trivia. Match data is retained only as long as needed to display results and comply with legal requests.\n\n> Telemetry stays on our servers until the room closes, then ages out on a defined schedule.\n\n## Third-Party Sub-processors\n\nIdentity flows may use `FirebaseUI`. Game state is stored in Google Cloud Firestore. Each provider processes data under its own terms while acting on our instructions.\n\n## Contact\n\nQuestions about these Terms can be sent to [legal@pubquiz.app](mailto:legal@pubquiz.app) or read alongside our [Privacy Policy](/privacy).\n"
+    },
+    {
+      "path": "privacy",
+      "title": "Privacy Policy",
+      "headline_primary": "Privacy",
+      "headline_accent": "Policy",
+      "date_label": "OCT 2024",
+      "leading_paragraph": "Effective Date: October 2024. Pub Quiz is committed to protecting your privacy and handling player telemetry transparently.",
+      "content": "## Information We Collect\n\nWhen you authenticate, lock a screen name, or play in live rounds we collect authentication identifiers, your chosen handle, answer submission timestamps, points awarded, and room connection metadata.\n\n### Categories of data\n\n- **Authentication data** passed through federated providers.\n- **Gameplay telemetry** such as response latency and ephemeral match data.\n- **Invitation dispatches** used solely to transmit join links.\n\n## FirebaseUI and Cloud Firestore\n\nAuthentication is rendered through **FirebaseUI**. Session and gameplay documents are persisted in **Cloud Firestore**. We maintain **zero monetization** of player contact information and do not sell personal data.\n\n## How We Use Data\n\n1. Synchronize live quiz rounds and leaderboards.\n2. Detect abuse and protect fair play.\n3. Respond to verified legal requests.\n\nLearn more about Google Cloud security at [https://cloud.google.com/security](https://cloud.google.com/security).\n\n## Your Data Rights\n\nYou may request **erasure** of your account history, **portability** exports of your match log, and object to processing where applicable privacy laws grant those rights.\n\n## Contact\n\nPrivacy inquiries can be submitted to [privacy@pubquiz.app](mailto:privacy@pubquiz.app).\n"
+    }
+  ]
+}

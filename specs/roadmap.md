@@ -23,7 +23,7 @@ The repo today is an Express app (`index.js`) with `GET /` (warm taproom landing
 | Grading | Cloud Functions hold `correctAnswerId` until the timer ends (§5.3) | Express grades from `game_room_secrets/{roomId}` | Public `game_rooms/{roomId}` never stores `correctAnswerId`, `explanation`, or `sourceCitations`. |
 | Auth UI this MVP | Google, SMS, Apple via FirebaseUI (FR-01) | `auth.js` must be able to name Google, SMS, Apple, and Anonymous Guest; secrets stay in env | Slice 3 ships **Google + Anonymous Guest** on the player screens. `auth.js` reads the full provider list from env. SMS and Apple stay off unless those env flags are set. No provider keys in the repo. |
 | Admin SSO | Future admin portal, Google Workspace, env-configured (§7) | `ADMIN_ALLOWED_DOMAIN` and `ADMIN_EMAILS` from `process.env` | Slice 3 reads and tests that config only. No `/admin` UI. `design/admin/` does not exist. |
-| Legal pages | FR-12 disclosures | Dedicated `/terms` and `/privacy` pages, never a modal. Content must be editable later by an admin | Static documents in `content/legal/`, rendered with the static-content template. |
+| Legal pages | FR-12 disclosures | Dedicated `/terms` and `/privacy` pages, never a modal. Content must be editable later by an admin | Markdown-enabled pages in `content/site-content.json`, rendered via `lib/content-store.js` (`marked` + `sanitize-html`) with the static-content sidebar template. |
 | Canvas color | PRD `#050811`; `DESIGN.md` and Stitch pages use `#0a0a12` | UI rule lists both | `[data-theme="taproom"]` in `public/styles/neon-tokyo.css` sets `--canvas: #050811` and `--canvas-deep: #0a0a12`. Page background is `--canvas` with `.cyber-grid` on top. Cards use `#0c101c` and Stitch `surface-container` `#141422`. Accents stay `#ff2d78`, `#00ffcc`, `#9d4edd`, `#ffe04a`. |
 | Player CSS | Stitch inlines Tailwind config and a `<style>` block per screen | Pure Tailwind. No DaisyUI on player pages | One file, `public/styles/neon-tokyo.css`, holds the extracted classes and tokens. Pages load `@tailwindcss/browser@4` and that stylesheet. They do not load `daisyui` or a second Tailwind config script. |
 | Sound, particles | PRD Sprint 4 | Out of scope for these six slices | Do not add audio or celebration effects. |
@@ -83,7 +83,7 @@ Stitch footers use `href="#"`. Implementation must not.
 | `topic_packs`, `questions` | Pack metadata and full questions, including keys and `sourceCitations` | — (server only) |
 | `game_rooms/{roomId}` | Status, pack ids, public question text, options `{id,text}`, players, scores, timer window | `correctAnswerId`, `explanation`, `sourceCitations` |
 | `game_room_secrets/{roomId}` | Answer key, explanation, `sourceCitations`, per-question open/close timestamps | — (server only) |
-| `content/legal/*.json` | Terms and privacy bodies | Secrets |
+| `content/site-content.json` | `footer_links` (legal Markdown bodies) and `static_copy` (gateway/footer UI strings) | Secrets |
 
 `db.js` is the only module that touches Firestore. When `NODE_ENV=test`, it uses a `Map` mock with the same function names.
 
@@ -111,18 +111,18 @@ Stitch footers use `href="#"`. Implementation must not.
 
 **Goal.** Replace the warm taproom landing with the Neon Tokyo shell, HUD chrome, and FR-12 pages. No accounts and no game data yet.
 
-**In scope.** `public/styles/neon-tokyo.css` as specified in §2.1, CRT dot-matrix and cyber-grid canvas, header and footer, and the auth-aware `PUB QUIZ` wordmark: `href="/"` when logged out and `href="/dashboard"` when logged in. Slice 1 owns that branch in the shared layout and tests both flags. `GET /` itself is logged out, because accounts arrive in Slice 3. Gateway page at `/` follows the homepage Stitch (visual only: guest PIN field and host entry can be present and inert). `/terms` and `/privacy` are dedicated static-content pages (FR-12), never a modal, modeled on `design/player/static_content/code.html`. Legal copy states telemetry (latency, ephemeral match data), sub-processors (FirebaseUI, Cloud Firestore), and the rights checklist (erasure, portability, zero monetization). Bodies live in JSON so a future admin editor can replace them without a template change. Each player page loads `https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4` and `/styles/neon-tokyo.css`, and does not load DaisyUI.
+**In scope.** `public/styles/neon-tokyo.css` as specified in §2.1, CRT dot-matrix and cyber-grid canvas, header and footer, and the auth-aware `PUB QUIZ` wordmark: `href="/"` when logged out and `href="/dashboard"` when logged in. Slice 1 owns that branch in the shared layout and tests both flags. `GET /` itself is logged out, because accounts arrive in Slice 3. Gateway page at `/` follows the homepage Stitch (visual only: guest PIN field and host entry can be present and inert). `/terms` and `/privacy` are dedicated static-content pages (FR-12), never a modal, modeled on `design/player/static_content/code.html` with the left-hand `footer_links` sidebar menu. All static and legal copy lives in `content/site-content.json` (`static_copy` + Markdown `footer_links` entries). `lib/content-store.js` loads that file (admin-portal–ready schema), renders Markdown with `marked` and `sanitize-html`, and applies Neon Tokyo typography classes. Legal copy states telemetry (latency, ephemeral match data), sub-processors (FirebaseUI, Cloud Firestore), and the rights checklist (erasure, portability, zero monetization). Each player page loads `https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4` and `/styles/neon-tokyo.css`, and does not load DaisyUI.
 
 **Out of scope.** FirebaseUI, handle validation, real PIN reservation, lobby, gameplay.
 
 **Target files.**
 
-- `index.js` — static `public/`, routes `/`, `/terms`, `/privacy`; shared layout renderer; keep `/health`
+- `index.js` — static `public/`, routes `/` and each `footer_links[].path`; shared layout renderer; keep `/health`
 - `public/styles/neon-tokyo.css` — extracted Stitch classes, `@theme` tokens, `[data-theme="taproom"]`
-- `content/legal/terms.json`
-- `content/legal/privacy.json`
+- `content/site-content.json` — `static_copy` and `footer_links` Markdown bodies
+- `lib/content-store.js` — load, sanitize, and render site content
 - `index.test.js` — replace warm-theme assertions; keep the health check
-- `test/shell.test.js`
+- `test/shell.test.js` and `test/content-store.test.js`
 
 **Stitch reference.**
 
@@ -138,7 +138,7 @@ Stitch footers use `href="#"`. Implementation must not.
 - `GET /` is `200` `text/html`, contains `data-theme="taproom"`, `href="/styles/neon-tokyo.css"`, `@tailwindcss/browser@4`, a `cyber-grid` class, and `href="/terms"` plus `href="/privacy"`
 - That HTML does not contain `daisyui` or `cdn.tailwindcss.com`
 - Logged-out layout wordmark `href` is `/`; the same layout with the signed-in flag sets the wordmark `href` to `/dashboard`
-- `GET /terms` and `GET /privacy` are `200` HTML documents that use the static-content template (stylesheet, `data-theme="taproom"`, `cyber-grid`). They are not a modal on `/`. Each page contains its document title, and `/privacy` mentions FirebaseUI, Cloud Firestore, erasure, portability, and zero monetization
+- `GET /terms` and `GET /privacy` are `200` HTML documents that use the static-content template (stylesheet, `data-theme="taproom"`, `cyber-grid`, left-hand sidebar from `footer_links`). They are not a modal on `/`. Markdown renders styled `h1`–`h3`, `p`, `ul`, `ol`, `li`, and `a` tags; scripts are stripped. Footer links match `footer_links`. `/privacy` mentions FirebaseUI, Cloud Firestore, erasure, portability, and zero monetization
 - Response HTML contains no `setInterval` and the server source under test starts no timer
 
 ---
