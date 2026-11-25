@@ -3,7 +3,7 @@ description: Core architecture, security, cost guardrails, and Paul Duvall lifec
 alwaysApply: true
 ---
 # Core Architecture & Guardrails
-- **Stack:** Node.js 24, Express, Cloud Firestore (`@google-cloud/firestore`), FirebaseUI Auth, Tailwind CSS v4 + DaisyUI v5 CDN (`@tailwindcss/browser@4` and `daisyui@5`).
+- **Stack:** Node.js 24, Express, Cloud Firestore (`@google-cloud/firestore`), FirebaseUI Auth, Tailwind CSS v4 (`@tailwindcss/browser@4` only). The Neon Tokyo player frontend does not use DaisyUI. Shared player chrome lives in `public/styles/neon-tokyo.css`, extracted from the Stitch exports in `design/player/*/code.html` (`.cyber-grid`, `.neon-glow-pink`, `.neon-glow-cyan`, the Stitch color tokens, and `Sora` / `Space Grotesk` / `Inter`).
 - **Database Isolation:** Keep all Firestore queries in `db.js` with an in-memory mock when `process.env.NODE_ENV === 'test'` so `npm test` runs offline without GCP credentials.
 - **Anti-Cheat Split:** Public room state lives in `game_rooms/{roomId}` (never include `correctAnswerId` or `explanation`). Answer keys live exclusively in `game_room_secrets/{roomId}` and are graded server-side.
 - **Auth & Future Admin SSO:** Route all identity checks through `auth.js`. Support FirebaseUI (Google, SMS, Apple, Anonymous Guest) for players, and read `ADMIN_ALLOWED_DOMAIN` / `ADMIN_EMAILS` from `process.env` (never hardcode secrets).

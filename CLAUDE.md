@@ -2,6 +2,7 @@
 
 ## Architecture & Guardrails
 - Stack: Node.js + Express, hosted on Google Cloud Run, database on Firestore.
+- Player frontend: Tailwind CSS only, plus `public/styles/neon-tokyo.css` extracted from `design/player/*/code.html` (`.cyber-grid`, `.neon-glow-pink`, `.neon-glow-cyan`, Stitch color tokens, `Sora`, `Space Grotesk`, `Inter`). Do not add DaisyUI to the Neon Tokyo player UI.
 - Cost Control: Never introduce background polling loops or persistent WebSockets that prevent Cloud Run from scaling to zero.
 - Security: Never hardcode API keys or credentials. Validate and sanitize all user inputs before database writes or LLM calls.
 
