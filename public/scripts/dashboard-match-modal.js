@@ -33,11 +33,21 @@
       fields.categories.textContent = row.getAttribute('data-categories') || '—';
     }
     if (fields.badge) {
+      fields.badge.replaceChildren();
       const outcome = row.getAttribute('data-outcome') || '';
       const type = row.getAttribute('data-outcome-type') || '';
-      fields.badge.innerHTML = type === '1st'
-        ? `<span class="pq-match-outcome-badge inline-flex items-center gap-1.5 px-3 py-1 bg-primary/20 text-primary border border-primary/60 rounded-md font-label text-xs font-bold uppercase shadow-[0_0_12px_rgba(255,45,120,0.3)]">${outcome}</span>`
-        : '';
+      if (type === '1st' && outcome) {
+        const badge = document.createElement('span');
+        badge.className =
+          'pq-match-outcome-badge inline-flex items-center gap-1.5 px-3 py-1 bg-primary/20 text-primary border border-primary/60 rounded-md font-label text-xs font-bold uppercase shadow-[0_0_12px_rgba(255,45,120,0.3)]';
+        const icon = document.createElement('span');
+        icon.className = 'material-symbols-outlined text-sm';
+        icon.style.fontVariationSettings = '"FILL" 1';
+        icon.textContent = 'workspace_premium';
+        badge.appendChild(icon);
+        badge.appendChild(document.createTextNode(` ${outcome}`));
+        fields.badge.appendChild(badge);
+      }
     }
     modal.classList.remove('hidden');
   }

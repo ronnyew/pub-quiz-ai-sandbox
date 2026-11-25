@@ -4,6 +4,7 @@ const { getFooterLinks, validateFooterLinkPath } = require('./lib/content-store'
 const {
   renderDashboardPage,
   renderGatewayPage,
+  renderGameStartPage,
   renderHandlePage,
   renderHostLobbyPage,
   renderStaticContentPage,
@@ -299,13 +300,22 @@ async function renderGameLobby(req, res, gamePin, { saved = false, error = null 
   );
 }
 
-app.get('/game', requireSessionWithHandle, async (req, res) => {
+app.get('/game', requireSessionWithHandle, (req, res) => {
+  const handle = req.resolvedHandle;
+  res.type('html').send(
+    renderGameStartPage({
+      session: { ...req.session, handle },
+    }),
+  );
+});
+
+app.post('/game', requireSessionWithHandle, async (req, res) => {
   try {
     const room = await createWaitingGame({
       hostUserId: req.session.uid,
       hostHandle: req.resolvedHandle,
     });
-    res.redirect(302, `/game/${room.roomId}`);
+    res.redirect(303, `/game/${room.roomId}`);
   } catch {
     res.status(500).type('text/plain').send('Failed to create game');
   }
@@ -349,7 +359,7 @@ app.post('/game/:gamePin/launch', requireSessionWithHandle, async (req, res) => 
   }
 });
 
-app.post('/api/games', requireSessionWithHandle, async (req, res) => {
+async function handleCreateGameApi(req, res) {
   try {
     const room = await createWaitingGame({
       hostUserId: req.session.uid,
@@ -364,7 +374,10 @@ app.post('/api/games', requireSessionWithHandle, async (req, res) => {
   } catch {
     res.status(500).json({ error: 'failed to create game' });
   }
-});
+}
+
+app.post('/api/games', requireSessionWithHandle, handleCreateGameApi);
+app.post('/api/rooms', requireSessionWithHandle, handleCreateGameApi);
 
 app.get('/join', requireSessionWithHandle, async (req, res) => {
   const gamePin = typeof req.query.game === 'string'
@@ -390,13 +403,12 @@ app.get('/join', requireSessionWithHandle, async (req, res) => {
     renderWaitingRoomPage({
       session: { ...req.session, handle: req.resolvedHandle },
       room: result.room,
-      serverTimeMs: Date.now(),
     }),
   );
 });
 
-app.get('/api/games/:gamePin', async (req, res) => {
-  const gamePin = req.params.gamePin;
+async function handleGetPublicGameApi(req, res) {
+  const gamePin = req.params.gamePin || req.params.pin;
   if (!isValidGamePin(gamePin)) {
     res.status(400).json({ error: 'invalid game pin' });
     return;
@@ -407,7 +419,10 @@ app.get('/api/games/:gamePin', async (req, res) => {
     return;
   }
   res.json(game);
-});
+}
+
+app.get('/api/games/:gamePin', handleGetPublicGameApi);
+app.get('/api/rooms/:pin', handleGetPublicGameApi);
 
 app.get('/api/topic-packs', (req, res) => {
   let limit;

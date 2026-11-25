@@ -166,11 +166,11 @@ test('resolvePublicBaseUrl falls back to request origin', () => {
   assert.equal(base, 'http://127.0.0.1:3333');
 });
 
-test('dashboard links Start Game CTA to /game and includes match modal shell', () => {
+test('dashboard CREATE NEW GAME submits POST /game and includes match modal shell', () => {
   const html = renderDashboardPage({ uid: 'u1', handle: 'Neo7', provider: 'google.com' });
-  assert.match(html, /href="\/game"/);
+  assert.match(html, /action="\/game"/);
+  assert.match(html, /method="post"/i);
   assert.match(html, /id="pq-create-game-cta"/);
-  assert.match(html, /href="\/game"[^>]*id="pq-create-game-cta"|id="pq-create-game-cta"[^>]*href="\/game"/);
   assert.ok(!html.includes('action="/api/rooms"'));
   assert.ok(!html.includes('POST /api/rooms'));
   assert.match(html, /id="pq-dashboard-sign-out"/);
@@ -199,8 +199,8 @@ test('POST /game/:gamePin/launch saves selected packs and zero-pack shows inline
     provider: 'google.com',
     handle: 'HostLaunch',
   });
-  const createRes = await request('GET', '/game', { cookie });
-  assert.equal(createRes.status, 302);
+  const createRes = await request('POST', '/game', { cookie });
+  assert.equal(createRes.status, 303);
   const location = createRes.headers.location || '';
   assert.match(location, /^\/game\/\d{6}$/);
   const gamePin = location.split('/').pop();
@@ -238,8 +238,8 @@ test('GET /game/:gamePin lobby uses Game PIN labels and not Room PIN', async () 
     provider: 'google.com',
     handle: 'HostLobby',
   });
-  const gameRes = await request('GET', '/game', { cookie: hostCookie });
-  assert.equal(gameRes.status, 302);
+  const gameRes = await request('POST', '/game', { cookie: hostCookie });
+  assert.equal(gameRes.status, 303);
   const location = gameRes.headers.location || '';
   assert.match(location, /^\/game\/\d{6}$/);
   const gamePin = location.split('/').pop();
@@ -281,7 +281,6 @@ test('host and waiting pages keep game pin and players out of top header chrome'
       status: 'WAITING',
       players: [{ userId: 'host1', handle: 'Neo7' }, { userId: 'p2', handle: 'Ally' }],
     },
-    serverTimeMs: Date.now(),
   });
   const hostHeader = extractHeader(hostHtml);
   const waitHeader = extractHeader(waitHtml);
@@ -379,7 +378,6 @@ test('lobby HTML escapes handles and pack titles with HTML characters', () => {
       status: 'WAITING',
       players: [{ userId: 'p2', handle: '<img>' }],
     },
-    serverTimeMs: Date.now(),
   });
   assert.ok(!waitHtml.includes('<img>'));
   assert.ok(waitHtml.includes('&lt;img&gt;'));

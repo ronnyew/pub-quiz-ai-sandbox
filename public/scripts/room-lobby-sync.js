@@ -13,7 +13,28 @@
   const playerCountEl = document.getElementById('pq-player-count');
   const playerGridEl = document.getElementById('pq-player-grid');
   const pingEl = document.getElementById('pq-sync-ping');
+  const pingTemplate = configEl.getAttribute('data-ping-template') || '';
   let timer = null;
+
+  function formatPing(ms) {
+    const safeMs = Math.max(1, Math.round(ms));
+    if (!pingTemplate) {
+      return String(safeMs);
+    }
+    return pingTemplate.replace('{ms}', String(safeMs));
+  }
+
+  function initialPingMs() {
+    const navEntries = performance.getEntriesByType('navigation');
+    const nav = navEntries && navEntries[0];
+    if (nav && Number.isFinite(nav.responseEnd) && Number.isFinite(nav.requestStart)) {
+      const delta = nav.responseEnd - nav.requestStart;
+      if (delta > 0) {
+        return Math.max(1, Math.round(delta));
+      }
+    }
+    return 1;
+  }
 
   function escapeHtml(value) {
     return String(value)
@@ -50,8 +71,8 @@
         renderPlayers(game.players);
       }
       if (pingEl) {
-        const elapsed = Math.max(0, Math.round(performance.now() - startedAt));
-        pingEl.textContent = `${elapsed}ms since last server response`;
+        const elapsed = Math.max(1, Math.round(performance.now() - startedAt));
+        pingEl.textContent = formatPing(elapsed);
       }
     } catch {
       /* ignore transient fetch errors */
@@ -60,6 +81,9 @@
 
   function start() {
     if (timer) return;
+    if (pingEl) {
+      pingEl.textContent = formatPing(initialPingMs());
+    }
     refresh();
     timer = setInterval(refresh, 4000);
   }

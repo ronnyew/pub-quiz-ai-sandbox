@@ -156,6 +156,12 @@
 2. **Why.** Solid pink CTA, cyan/pink panel borders with corner brackets, and arcade pager styling match the approved Stitch reference without reintroducing the gradient launch button.
 3. **Security and cost.** Presentation-only; PLAYER GRID layout unchanged under the launch CTA.
 
+## 2026-11-25 — Dashboard hero rotated plaque removed
+
+1. **What changed.** Removed the rotated pink border square from the dashboard hero (clashed with SIGN OUT on both sides).
+2. **Why.** Product chrome on the right makes that Stitch-only decoration unusable without visual bugs; cyan top-left corner and hero border remain.
+3. **Security and cost.** Presentation-only.
+
 ## 2026-11-25 — Host launch form pack sync & lobby errors
 
 1. **What changed.** Renamed launch form to `#launch-game-form` with detached submit via `form="launch-game-form"`, off-page hidden `topicPackIds`, and `host-topic-cards.js` syncing all selections into `#pq-launch-pack-hidden`. `POST /game/:gamePin/launch` re-renders the lobby with `role="alert"` Neon Tokyo banner on empty/invalid packs instead of plain text. Exported `assertPackIds` from `db.js` (was missing from `module.exports`, causing save to throw). Dashboard handle uses `.pq-dashboard-handle` pink glow; global interactive `cursor: pointer` rules in `neon-tokyo.css`.
@@ -167,3 +173,15 @@
 1. **What changed.** `renderDashboardPage` / match rows now mirror Stitch pink/cyan action cards, hero accents, history table ticks, outcome chevrons, and match modal corners; `neon-tokyo.css` adds `.pq-dashboard-signout`, join pin, and table hooks; `dashboard-match-modal.js` fills `modal-rounds`. `CLAUDE.md` and Slice 4 in `specs/roadmap.md` document mandatory hero **SIGN OUT**. Tests assert SIGN OUT, `/game` CTA, and `#489028` demo code.
 2. **Why.** Dashboard was legibility-broken on the cyan join CTA and missed Stitch border/glow tokens; SIGN OUT is product auth chrome beyond the mock.
 3. **Security and cost.** No new polling or routes; sign-out remains existing session POST. Presentation and client-only modal wiring only.
+
+## 2026-11-25 — Slice 4 continuation (Firestore rooms, CSRF-safe create, evaluator fixes)
+
+1. **What changed.** `db.js` persists `game_rooms/{roomId}` in Firestore when `shouldUseFirestore()` / `DATA_BACKEND=firestore` (with `.data/` local fallback for `DATA_BACKEND=local`), strips answer-key fields and PII on write, and uses transactions or in-process locks for concurrent joins. `GET /game` renders a setup shell; `POST /game` (dashboard + shell) creates rooms with `303` redirect. Added `/api/rooms` POST/GET aliases, CMS labels in `content/site-content.json`, dashboard hero cyan bracket, safe `dashboard-match-modal.js` badge DOM, and `room-lobby-sync.js` initial ping from `serverTimeMs`.
+2. **Why.** Slice 4 evaluator flagged memory-only rooms, CSRF on `GET /game`, lost concurrent players, XSS in the modal, hardcoded table copy, and missing roadmap `/api/rooms` contract alongside `/game` + Game PIN invites.
+3. **Security and cost.** No secrets in public room docs; room creation requires POST session. Firestore is point read/write per request (no background sync). Client lobby polling unchanged (4s, visible tab only).
+
+## 2026-11-25 — Slice 4 evaluator warning fixes (spec sync, joins, CMS ping)
+
+1. **What changed.** Added **Spec & Roadmap Synchronization** rule to `CLAUDE.md` and updated Slice 4 in `specs/roadmap.md` and FR-03/05/06 in `specs/prd-neon-tokyo.md` for `/game`, Game PIN, and `${APP_BASE_URL||origin||pubquiz.app}/join?game=`. `DATA_BACKEND=firestore` no longer blocks seeded `listTopicPacks`; joins dedupe inside `updateGameRoom`; `createWaitingGame` retries on `create()` collision; `buildInviteUrl` defaults to `https://pubquiz.app`; CMS `formatCopyTemplate` for dashboard history pager and lobby labels; `data-ping-template` + navigation timing in `room-lobby-sync.js`.
+2. **Why.** Evaluator warnings on stale specs, topic-pack footgun, join/PIN races, hardcoded UI copy, and clock-skew ping text.
+3. **Security and cost.** Atomic room writes prevent duplicate players; no new background work. Ping remains client-only display; Firestore/topic-pack split keeps seed reads in-process without extra queries.

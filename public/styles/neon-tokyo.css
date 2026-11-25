@@ -326,6 +326,16 @@
 }
 
 /* Dashboard — `design/player/dashboard_with_match_modal/code.html` */
+.pq-dashboard-hero {
+  isolation: isolate;
+  background-color: #141422;
+}
+
+.pq-dashboard-hero > .max-w-7xl {
+  position: relative;
+  z-index: 1;
+}
+
 .pq-dashboard-handle {
   color: #ff2d78;
   text-shadow: 0 0 24px rgba(255, 45, 120, 0.65);

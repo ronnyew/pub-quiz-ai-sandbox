@@ -219,14 +219,14 @@ Stitch footers use `href="#"`. Implementation must not.
 
 **In scope.**
 
-- `POST /api/rooms` creates `WAITING` room, 6-digit PIN, retry on collision (bounded, max 5 attempts).
-- Host page: search with clear, 6 packs per page, pager text `Showing {start}–{end} of {total} Topics`, multi-select checkboxes (FR-04).
-- Invite field value `https://pubquiz.app/join?room={pin}` with a copy control (FR-05). The primary button label is `LAUNCH & START GAME NOW`. In this slice the button stores the selected pack ids and stays on the lobby; Slice 5 performs the deal and status flip to `ACTIVE`.
-- `GET /join?game=` validates the Game PIN, requires a handle, then adds the player and renders the waiting room (FR-06): player grid, PIN badge, headcount. Radar graphic is CSS. Ping text is a single server timestamp delta from that response, not a poller on the server.
+- `POST /api/games` and `POST /api/rooms` (alias) create a `WAITING` room with a 6-digit **Game PIN**, using atomic `create()` with bounded retry (max 5 attempts) on PIN collision. `GET /game` is a non-mutating setup shell; `POST /game` creates the room and redirects `303` to `GET /game/:gamePin`.
+- Host page at `GET /game/:gamePin`: search with clear, 6 packs per page, pager text `Showing {start}–{end} of {total} Topics`, multi-select checkboxes (FR-04).
+- Invite field value `${APP_BASE_URL || requestOrigin || https://pubquiz.app}/join?game={pin}` with copy control (FR-05); `GET /join?game=` accepts the pin with `?room=` as a legacy query fallback. Primary launch label is `LAUNCH & START GAME NOW`. In this slice launch stores pack ids only; Slice 5 deals and sets `ACTIVE`.
+- `GET /join?game=` validates the Game PIN, requires a handle, adds the player, and renders the waiting room (FR-06): player grid, PIN badge, headcount. Radar is CSS. Ping label uses CMS `ping_template`; client shows navigation `responseEnd − requestStart` on first paint and poll round-trip latency every 4s while visible—no server timer.
 - **Host lobby `PLAYER GRID` (product extension):** The host screen at `GET /game/:gamePin` includes a live **PLAYER GRID** card beneath the launch CTA in the right column. This is intentional beyond the base Stitch mock and must be preserved in later slices and `/evaluate-slice` checks.
 - **Dashboard `SIGN OUT` (product extension):** `GET /dashboard` matches `design/player/dashboard_with_match_modal/code.html` for neon hero, pink/cyan action cards, Game PIN join, and match history/modal. The hero **SIGN OUT** control (`POST /api/auth/signout`, `.pq-dashboard-signout`) is required product chrome not present in the Stitch export and must stay through Slice 6+ unless the PRD changes.
 - Game PIN and player headcount appear in the **page hero** only—not duplicated in the global top header wordmark bar (wordmark-only chrome).
-- Client script may `fetch` `GET /api/rooms/:pin` on an interval only while `document.visibilityState === 'visible'`, and must clear it on hide and page unload. Server route is a plain GET with a point read of one room.
+- Client script may `fetch` `GET /api/games/:gamePin` (or `GET /api/rooms/:pin` alias) only while `document.visibilityState === 'visible'`, clearing on hide/unload. Server route is a plain GET point read of one room.
 - Public room JSON has no secret fields.
 
 **Out of scope.** Dealing questions, timer, scoring, podium.
@@ -248,7 +248,7 @@ Stitch footers use `href="#"`. Implementation must not.
 
 - New PINs match `/^\d{6}$/` and a forced collision returns the next free PIN within 5 tries
 - Pack search is case-insensitive, page size is 6, and the pager string matches `Showing 1–6 of N Topics` for a seed larger than 6
-- Invite string is exactly `https://pubquiz.app/join?room=` plus the PIN
+- Invite string matches `${configuredBase}/join?game=` plus the PIN; with no `APP_BASE_URL` and no request host, base defaults to `https://pubquiz.app`; with a local request host, base is that origin (e.g. `http://localhost:8080`)
 - A handle or pack title containing HTML is escaped in the lobby HTML
 - `GET /api/rooms/:pin` body has `players` and `status` and does not contain `correctAnswerId`, `explanation`, or `sourceCitations`
 - Server room module and route file contain no `setInterval`, `setTimeout` loop, or `WebSocket`
@@ -333,7 +333,7 @@ Stitch footers use `href="#"`. Implementation must not.
 - `/admin` and `[data-theme="admin"]` (no Stitch folder yet)
 - SMS and Apple buttons turned on in production
 - 8-bit audio and victory particles (PRD Sprint 4)
-- A custom domain in front of Cloud Run (PRD §7). Invite URLs stay `https://pubquiz.app/join?room=` as in FR-05 until that domain exists.
+- A custom domain in front of Cloud Run (PRD §7). Set `APP_BASE_URL` to the production hostname; until then invite URLs default to `https://pubquiz.app/join?game=` per FR-05.
 
 ---
 

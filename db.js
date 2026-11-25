@@ -9,6 +9,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const USERS_FILE = path.join(__dirname, '.data', 'users.json');
+const GAME_ROOMS_FILE = path.join(__dirname, '.data', 'game_rooms.json');
 const USER_UID = /^[A-Za-z0-9_-]{1,128}$/;
 
 const ROOM_ID = /^\d{6}$/;
@@ -21,19 +22,16 @@ const memory = {
 };
 
 let usersHydratedFromDisk = false;
+let gameRoomsHydratedFromDisk = false;
 let firestoreClient = null;
+let firestoreClientOverride = null;
+let gameRoomPersistenceOverride = null;
+
+const roomUpdateChains = new Map();
 
 let seeded = false;
 
-function assertMemoryStore() {
-  if (process.env.NODE_ENV === 'test') return;
-  if (process.env.DATA_BACKEND === 'firestore') {
-    throw new Error('Firestore backend is not available in this build');
-  }
-}
-
 function seed(dataset) {
-  assertMemoryStore();
   const source = dataset || require('./data/seed');
   if (!source || !Array.isArray(source.topicPacks) || !Array.isArray(source.questions)) {
     throw new TypeError('seed must include topicPacks and questions arrays');
@@ -85,7 +83,6 @@ function ensureSeeded() {
 }
 
 function listTopicPacks({ limit = MAX_PACK_LIMIT } = {}) {
-  assertMemoryStore();
   ensureSeeded();
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_PACK_LIMIT) {
     throw new RangeError(`limit must be an integer from 1 to ${MAX_PACK_LIMIT}`);
@@ -94,7 +91,6 @@ function listTopicPacks({ limit = MAX_PACK_LIMIT } = {}) {
 }
 
 function listQuestionsByPackIds(topicPackIds, { limit = MAX_QUESTION_READ } = {}) {
-  assertMemoryStore();
   ensureSeeded();
   assertPackIds(topicPackIds);
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_QUESTION_READ) {
@@ -227,18 +223,77 @@ function assertUid(uid) {
 function shouldUseFirestore() {
   if (process.env.NODE_ENV === 'test') return false;
   if (String(process.env.DATA_BACKEND || '').toLowerCase() === 'memory') return false;
+  if (String(process.env.DATA_BACKEND || '').toLowerCase() === 'firestore') return true;
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) return true;
   if (process.env.K_SERVICE) return true;
   if (process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT) return true;
   return false;
 }
 
+function shouldUseLocalGameRoomDisk() {
+  if (process.env.NODE_ENV === 'test') return false;
+  if (gameRoomsUseFirestore()) return false;
+  return String(process.env.DATA_BACKEND || '').toLowerCase() === 'local';
+}
+
+function gameRoomsUseFirestore() {
+  if (gameRoomPersistenceOverride === 'firestore') return true;
+  if (gameRoomPersistenceOverride === 'memory') return false;
+  return shouldUseFirestore();
+}
+
 function getFirestoreClient() {
+  if (firestoreClientOverride) {
+    return firestoreClientOverride;
+  }
   if (!firestoreClient) {
     const { Firestore } = require('@google-cloud/firestore');
     firestoreClient = new Firestore();
   }
   return firestoreClient;
+}
+
+function setFirestoreClientForTest(client) {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('setFirestoreClientForTest is only available in test');
+  }
+  firestoreClientOverride = client;
+}
+
+function setGameRoomPersistenceForTest(mode) {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('setGameRoomPersistenceForTest is only available in test');
+  }
+  gameRoomPersistenceOverride = mode;
+}
+
+function resetGameRoomTestHooks() {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('resetGameRoomTestHooks is only available in test');
+  }
+  firestoreClientOverride = null;
+  gameRoomPersistenceOverride = null;
+  roomUpdateChains.clear();
+}
+
+function gameRoomsCollection() {
+  return getFirestoreClient().collection('game_rooms');
+}
+
+function withRoomUpdateLock(roomId, fn) {
+  const previous = roomUpdateChains.get(roomId) || Promise.resolve();
+  const next = previous
+    .catch(() => {})
+    .then(fn);
+  roomUpdateChains.set(
+    roomId,
+    next.finally(() => {
+      if (roomUpdateChains.get(roomId) === next) {
+        roomUpdateChains.delete(roomId);
+      }
+    }),
+  );
+  return next;
 }
 
 function toStoredProfile(uid, { handle, provider, updatedAt }) {
@@ -387,46 +442,135 @@ function sanitizeGameRoomForStorage(room) {
   delete clone.questions;
   delete clone.deck;
   delete clone.secrets;
+  delete clone.email;
+  delete clone.phone;
+  if (Array.isArray(clone.players)) {
+    clone.players = clone.players.map((player) => {
+      const { userId, handle } = player;
+      return { userId, handle };
+    });
+  }
   return clone;
 }
 
-async function createGameRoom(room) {
-  assertMemoryStore();
-  const record = sanitizeGameRoomForStorage(room);
-  if (memory.gameRooms.has(record.roomId)) {
-    throw new Error('room already exists');
+function ensureGameRoomsHydrated() {
+  if (process.env.NODE_ENV === 'test' || gameRoomsHydratedFromDisk || !shouldUseLocalGameRoomDisk()) {
+    return;
   }
-  memory.gameRooms.set(record.roomId, record);
-  return structuredClone(record);
+  gameRoomsHydratedFromDisk = true;
+  try {
+    const raw = fs.readFileSync(GAME_ROOMS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return;
+    for (const [roomId, record] of Object.entries(parsed)) {
+      if (!ROOM_ID.test(roomId)) continue;
+      try {
+        memory.gameRooms.set(roomId, sanitizeGameRoomForStorage({ ...record, roomId }));
+      } catch {
+        /* skip invalid persisted room */
+      }
+    }
+  } catch (err) {
+    if (err && err.code !== 'ENOENT') throw err;
+  }
 }
 
-async function gameRoomExists(roomId) {
-  assertMemoryStore();
-  assertRoomId(roomId);
-  return memory.gameRooms.has(roomId);
+function persistGameRoomsToDisk() {
+  if (process.env.NODE_ENV === 'test' || !shouldUseLocalGameRoomDisk()) return;
+  const payload = Object.fromEntries(memory.gameRooms.entries());
+  fs.mkdirSync(path.dirname(GAME_ROOMS_FILE), { recursive: true });
+  fs.writeFileSync(GAME_ROOMS_FILE, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
 }
 
-async function getGameRoom(roomId) {
-  assertMemoryStore();
-  assertRoomId(roomId);
+function loadGameRoomFromMemory(roomId) {
+  ensureGameRoomsHydrated();
   const room = memory.gameRooms.get(roomId);
   return room ? structuredClone(room) : null;
 }
 
-async function updateGameRoom(roomId, updater) {
-  assertMemoryStore();
-  assertRoomId(roomId);
-  const existing = memory.gameRooms.get(roomId);
-  if (!existing) {
-    throw new Error('room not found');
+function writeGameRoomToMemory(record) {
+  ensureGameRoomsHydrated();
+  memory.gameRooms.set(record.roomId, record);
+  persistGameRoomsToDisk();
+}
+
+async function createGameRoom(room) {
+  const record = sanitizeGameRoomForStorage(room);
+  if (gameRoomsUseFirestore()) {
+    const ref = gameRoomsCollection().doc(record.roomId);
+    try {
+      await ref.create(record);
+    } catch (err) {
+      if (err && (err.code === 6 || err.code === 'already-exists')) {
+        throw new Error('room already exists');
+      }
+      throw err;
+    }
+    return structuredClone(record);
   }
-  const next = typeof updater === 'function' ? updater(structuredClone(existing)) : updater;
-  const record = sanitizeGameRoomForStorage(next);
-  if (record.roomId !== roomId) {
-    throw new TypeError('roomId mismatch on update');
+  if (memory.gameRooms.has(record.roomId)) {
+    throw new Error('room already exists');
   }
-  memory.gameRooms.set(roomId, record);
+  writeGameRoomToMemory(record);
   return structuredClone(record);
+}
+
+async function gameRoomExists(roomId) {
+  assertRoomId(roomId);
+  if (gameRoomsUseFirestore()) {
+    const snap = await gameRoomsCollection().doc(roomId).get();
+    return snap.exists;
+  }
+  ensureGameRoomsHydrated();
+  return memory.gameRooms.has(roomId);
+}
+
+async function getGameRoom(roomId) {
+  assertRoomId(roomId);
+  if (gameRoomsUseFirestore()) {
+    const snap = await gameRoomsCollection().doc(roomId).get();
+    if (!snap.exists) return null;
+    try {
+      return sanitizeGameRoomForStorage({ ...snap.data(), roomId });
+    } catch {
+      return null;
+    }
+  }
+  return loadGameRoomFromMemory(roomId);
+}
+
+async function updateGameRoom(roomId, updater) {
+  assertRoomId(roomId);
+  if (gameRoomsUseFirestore()) {
+    return getFirestoreClient().runTransaction(async (transaction) => {
+      const ref = gameRoomsCollection().doc(roomId);
+      const snap = await transaction.get(ref);
+      if (!snap.exists) {
+        throw new Error('room not found');
+      }
+      const existing = sanitizeGameRoomForStorage({ ...snap.data(), roomId });
+      const next = typeof updater === 'function' ? updater(structuredClone(existing)) : updater;
+      const record = sanitizeGameRoomForStorage(next);
+      if (record.roomId !== roomId) {
+        throw new TypeError('roomId mismatch on update');
+      }
+      transaction.set(ref, record);
+      return structuredClone(record);
+    });
+  }
+  return withRoomUpdateLock(roomId, async () => {
+    const existing = loadGameRoomFromMemory(roomId);
+    if (!existing) {
+      throw new Error('room not found');
+    }
+    const next = typeof updater === 'function' ? updater(structuredClone(existing)) : updater;
+    const record = sanitizeGameRoomForStorage(next);
+    if (record.roomId !== roomId) {
+      throw new TypeError('roomId mismatch on update');
+    }
+    writeGameRoomToMemory(record);
+    return structuredClone(record);
+  });
 }
 
 function resetGameRoomsForTest() {
@@ -434,6 +578,7 @@ function resetGameRoomsForTest() {
     throw new Error('resetGameRoomsForTest is only available in test');
   }
   memory.gameRooms.clear();
+  resetGameRoomTestHooks();
 }
 
 module.exports = {
@@ -449,4 +594,7 @@ module.exports = {
   getGameRoom,
   updateGameRoom,
   resetGameRoomsForTest,
+  setFirestoreClientForTest,
+  setGameRoomPersistenceForTest,
+  shouldUseFirestore,
 };

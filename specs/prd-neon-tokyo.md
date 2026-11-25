@@ -38,7 +38,7 @@
 ### 3.1 Authentication & Onboarding
 - **FR-01 (Landing & Auth):**
   - Federated SSO (Google, Phone/SMS, Apple ID) integrated via FirebaseUI.
-  - Seamless "Join as Guest" route with quick 6-digit Room PIN entry.
+  - Seamless "Join as Guest" route with quick 6-digit Game PIN entry (`GET /join?game=`; legacy `?room=` query accepted).
   - Persistent brand footer with legal documentation links.
 - **FR-02 (Screen Name Setup):**
   - Prompted upon first sign-in or guest entry.
@@ -46,17 +46,17 @@
   - Real-time handle preview and "Lock In Handle & Enter Lobby" action.
 
 ### 3.2 Game Creation & Host Controls
-- **FR-03 (Room PIN & Reservation):**
-  - Real-time 6-digit Room PIN generator and reservation beacon (e.g., `# 8492`).
-  - Active waiting competitor counter indicator next to the PIN reservation badge.
+- **FR-03 (Game PIN & Reservation):**
+  - Real-time 6-digit Game PIN generator and reservation beacon (e.g., `# 8492`) on `GET /game/:gamePin`.
+  - Active waiting competitor counter indicator next to the Game PIN reservation badge.
 - **FR-04 (Multi-Topic Selection & Discovery):**
   - Integrated topic search bar with quick clear (`ESC`).
   - 6 topic packs displayed per view with interactive checkboxes allowing multi-pack selection.
   - Quiz engine dynamically samples and interleaves questions evenly across all selected topic packs.
   - HUD pagination component (`Showing 1–6 of 24 Topics`).
 - **FR-05 (Invite Dispatch):**
-  - Single-click URL copy dispatch field (`https://pubquiz.app/join?room=8492`).
-  - High-visibility primary CTA: `LAUNCH & START GAME NOW 🚀`.
+  - Single-click URL copy dispatch field: `${APP_BASE_URL || requestOrigin || https://pubquiz.app}/join?game={pin}` (e.g. `https://pubquiz.app/join?game=849284`).
+  - High-visibility primary CTA: `LAUNCH & START GAME NOW` (rocket icon in UI).
 
 ### 3.3 Synchronous Lobby & Waiting State
 - **FR-06 (Waiting for Host):**
@@ -115,7 +115,7 @@
   - Shadows: Layered neon drop-shadows with 15–20px blurs.
 
 ### 4.2 Standard Layout Chrome
-- **Header:** Uppercase bold screen title on the left; Room PIN reservation tag (`# 8492`) and waiting headcount badge on the right, punctuated by a continuous neon divider rule.
+- **Header:** Uppercase bold screen title on the left; Game PIN reservation tag (`# 8492`) and waiting headcount badge on the right, punctuated by a continuous neon divider rule.
 - **Footer:** Standardized 3-column desktop bar / stacked mobile row:
   - Left: `PUB QUIZ` brand badge
   - Center: Legal navigation links (`TERMS & CONDITIONS`, `PRIVACY POLICY`)

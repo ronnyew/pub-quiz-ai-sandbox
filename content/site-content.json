@@ -69,6 +69,7 @@
       "table_game_code": "GAME CODE",
       "history_empty_note": "Complete a live session to populate your match history.",
       "history_pager_label": "SHOWING 0 OF 0 RECORDED SESSIONS",
+      "history_sessions_pager_template": "SHOWING {count} OF {total} RECORDED SESSIONS",
       "sign_out_label": "Sign Out",
       "demo_matches": [
         {
@@ -116,7 +117,29 @@
     "footer": {
       "status_text": "© 2024 / ONLINE"
     },
-    "legal_menu_label": "MENU"
+    "legal_menu_label": "MENU",
+    "shared": {
+      "table_categories": "CATEGORIES",
+      "table_date": "DATE",
+      "table_score": "SCORE",
+      "table_outcome": "OUTCOME",
+      "modal_total_score": "TOTAL SCORE",
+      "modal_accuracy": "ACCURACY",
+      "modal_avg_speed": "AVG SPEED",
+      "modal_rank": "RANK",
+      "modal_rounds": "ROUNDS",
+      "topics_pager_template": "Showing {start}–{end} of {total} Topics",
+      "topics_pager_range_template": "SHOWING {range} OF {total} TOPICS",
+      "pack_questions_template": "{n} QUESTIONS",
+      "players_count_template": "{n} PLAYERS",
+      "default_player_label": "PLAYER"
+    },
+    "game_start": {
+      "title_line_before": "START A",
+      "title_line_accent": "GAME",
+      "body": "Reserve a six-digit Game PIN, pick topic packs, and dispatch invite links. Creating a room stores lobby state on the server—submit below when you are ready.",
+      "submit_label": "CREATE NEW GAME"
+    }
   },
   "footer_links": [
     {
