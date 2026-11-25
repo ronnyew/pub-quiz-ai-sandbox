@@ -1,0 +1,305 @@
+<!DOCTYPE html><html class="dark" lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><title>Pub Quiz - Configure Room</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Sora:wght@600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    overscroll-behavior: none;
+  }
+  main > :first-child {
+    margin-top: 0 !important;
+  }
+  main > :last-child {
+    margin-bottom: 0 !important;
+  }
+}
+::-webkit-scrollbar {
+  display: none;
+}
+.cyber-grid {
+  background-image: linear-gradient(to right, rgba(255, 45, 120, 0.05) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(0, 255, 204, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.neon-glow-pink {
+  box-shadow: 0 0 25px rgba(255, 45, 120, 0.4), inset 0 0 15px rgba(255, 45, 120, 0.2);
+}
+.neon-glow-cyan {
+  box-shadow: 0 0 25px rgba(0, 255, 204, 0.35), inset 0 0 10px rgba(0, 255, 204, 0.15);
+}
+</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "on-error-container": "#ffa0a0",
+          "tertiary-container": "#665200",
+          "primary": "#ff2d78",
+          "secondary-container": "#004d3d",
+          "outline": "#5a5068",
+          "surface-container-high": "#1e1e30",
+          "on-tertiary": "#1a1000",
+          "primary-container": "#b3004e",
+          "on-tertiary-fixed-variant": "#665200",
+          "surface": "#0f0f1a",
+          "secondary-fixed": "#c0fff4",
+          "on-background": "#e8e0f0",
+          "on-surface": "#e8e0f0",
+          "error-container": "#3d0f0f",
+          "on-primary-fixed": "#3d0020",
+          "on-primary": "#1a0010",
+          "on-secondary-fixed-variant": "#004d4d",
+          "surface-tint": "#ff2d78",
+          "on-surface-variant": "#a098b0",
+          "on-tertiary-fixed": "#1a1000",
+          "background": "#0a0a12",
+          "surface-bright": "#1a1a2e",
+          "primary-fixed-dim": "#ff80aa",
+          "primary-fixed": "#ffe0ec",
+          "on-secondary-container": "#c0fff4",
+          "inverse-on-surface": "#0a0a12",
+          "surface-container-highest": "#28283e",
+          "on-secondary-fixed": "#001a1a",
+          "surface-container-low": "#111118",
+          "surface-container-lowest": "#0a0a12",
+          "surface-dim": "#0f0f1a",
+          "tertiary-fixed-dim": "#ffe04a",
+          "on-error": "#1a0000",
+          "error": "#ff4444",
+          "on-secondary": "#001a1a",
+          "surface-variant": "#1e1e30",
+          "tertiary": "#ffe04a",
+          "on-primary-fixed-variant": "#8c0038",
+          "inverse-surface": "#e8e0f0",
+          "surface-container": "#141422",
+          "secondary": "#00ffcc",
+          "on-primary-container": "#ffe0ec",
+          "tertiary-fixed": "#fff0c0",
+          "inverse-primary": "#8c0038",
+          "outline-variant": "#302840",
+          "secondary-fixed-dim": "#00e6b8",
+          "on-tertiary-container": "#fff0c0"
+        },
+        borderRadius: {
+          DEFAULT: "0.125rem",
+          lg: "0.25rem",
+          xl: "0.5rem",
+          full: "0.75rem"
+        },
+        fontFamily: {
+          headline: ["Sora", "sans-serif"],
+          display: ["Sora", "sans-serif"],
+          body: ["Inter", "sans-serif"],
+          label: ["Space Grotesk", "monospace", "sans-serif"]
+        }
+      }
+    }
+  }
+</script></head><body class="bg-[#0a0a12] font-body text-[#e8e0f0] min-h-screen flex flex-col selection:bg-primary selection:text-white cyber-grid"><header class="fixed top-0 left-0 w-full z-50 bg-[#0a0a12]/90 backdrop-blur-md border-b border-[#302840]"></header><main class="w-full flex-1 bg-transparent pt-12"><div class="flex flex-col w-full">
+<!-- Top Ticker / Meta Banner -->
+<!-- Main Configuration Container -->
+<div class="w-full max-w-7xl mx-auto relative z-10 px-12 pb-6">
+<!-- Header Block with brutalist alignment -->
+<div class="relative mb-10 lg:mb-14">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b-2 border-[#302840]">
+<div>
+<div class="flex items-center gap-3 mb-2">
+</div>
+<h1 class="font-headline font-extrabold text-4xl sm:text-6xl lg:text-7xl uppercase tracking-tight text-white leading-none drop-shadow-[0_0_20px_rgba(255,45,120,0.2)]">
+            START A<br class="hidden sm:inline"><span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-pink-400 to-secondary">GAME</span></h1>
+</div>
+<div class="flex flex-wrap items-start md:items-end justify-start md:justify-end gap-6 text-left md:text-right"><div class="flex flex-col items-start md:items-end"><p class="font-label text-xs uppercase font-bold tracking-widest text-[#a098b0]">ROOM PIN RESERVATION</p><div class="mt-2 inline-flex items-center gap-3 bg-[#141422] px-4 py-2 border-2 border-secondary/60 rounded shadow-[0_0_20px_rgba(0,255,204,0.25)]"><span class="font-headline text-2xl font-bold tracking-widest text-secondary drop-shadow-[0_0_8px_#00ffcc]"># 8492</span><span class="w-2.5 h-2.5 rounded-full bg-secondary animate-ping"></span></div></div><div class="flex flex-col items-start md:items-end"><p class="font-label text-xs uppercase font-bold tracking-widest text-[#a098b0]">PLAYERS WAITING</p><div class="mt-2 inline-flex items-center gap-3 bg-[#141422] px-4 py-2 border-2 border-secondary/60 rounded shadow-[0_0_20px_rgba(0,255,204,0.25)]"><span class="material-symbols-outlined text-secondary text-xl drop-shadow-[0_0_8px_#00ffcc]">group</span><span class="font-headline text-2xl font-bold tracking-widest text-secondary drop-shadow-[0_0_8px_#00ffcc]">4</span></div></div></div>
+</div>
+</div>
+<!-- Dual Column Master Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Topic & Host Credentials (7 cols) -->
+<div class="lg:col-span-7 flex flex-col gap-8">
+<!-- SECTION 1: TOPIC SELECTION -->
+<section class="bg-[#141422]/95 backdrop-blur-xl p-6 sm:p-8 border border-secondary/50 rounded-xl relative shadow-[0_0_35px_rgba(0,255,204,0.15)] overflow-hidden"><!-- Cyber Corner Accents --><div class="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-secondary"></div><div class="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-primary"></div><div class="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-primary"></div><div class="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-secondary"></div><div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-5 border-b border-[#302840] gap-3"><div class="flex items-center gap-3"><span class="w-7 h-7 bg-primary text-white font-headline font-bold text-sm flex items-center justify-center rounded shadow-[0_0_10px_#ff2d78]">1</span><h2 class="font-headline font-bold text-xl uppercase tracking-tight text-white">SELECT TOPICS</h2></div><span class="font-label text-xs font-bold uppercase text-primary tracking-wider px-2 py-0.5 bg-primary/10 border border-primary/40 rounded self-start sm:self-auto">MANDATORY</span></div><!-- Search Bar --><div class="mb-5"><div class="relative flex items-center"><span class="material-symbols-outlined absolute left-3.5 text-[#a098b0] text-lg pointer-events-none">search</span><input class="w-full bg-[#0f0f1a] border border-[#302840] focus:border-secondary focus:ring-1 focus:ring-secondary text-white font-label text-xs placeholder:text-[#5a5068] pl-10 pr-4 py-2.5 rounded-lg outline-none transition-all tracking-wider uppercase" id="topic-search-input" oninput="filterTopics()" placeholder="SEARCH THEMES OR CATEGORIES (E.G. GAMING, TECH, MUSIC)..." type="text"><span class="absolute right-3 font-mono text-[11px] text-secondary font-bold" id="search-count">24 PACKS</span></div></div><!-- 6 Cards in 2-Column Grid --><div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="topic-grid"><!-- Card 1 --><button class="topic-card text-left p-4 sm:p-5 border-2 border-primary bg-[#1a0010] text-white rounded-xl neon-glow-pink transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex flex-col justify-between h-40 group relative overflow-hidden" data-category="FILM &amp; MEDIA" data-title="POP CULTURE &amp; CINEMA" data-topic="cinema" onclick="selectCard(this)" type="button"><div class="flex justify-between items-start w-full relative z-10"><span class="px-2 py-0.5 bg-primary text-white font-label text-[10px] uppercase font-bold tracking-widest rounded shadow-[0_0_8px_#ff2d78]">FILM &amp; MEDIA</span><span class="material-symbols-outlined text-primary text-2xl group-hover:scale-110 transition-transform status-icon">check_box</span></div><div class="relative z-10"><div class="font-headline font-bold text-base sm:text-lg uppercase tracking-tight text-white leading-tight drop-shadow-[0_0_10px_rgba(255,45,120,0.5)]">POP CULTURE &amp; CINEMA</div><div class="flex items-center gap-2 mt-1.5 font-label text-xs font-semibold text-secondary uppercase tracking-wider"><span class="material-symbols-outlined text-sm">quiz</span><span>20 QUESTIONS</span><span>•</span><span>BALANCED</span></div></div></button><!-- Card 2 --><button class="topic-card text-left p-4 sm:p-5 border border-[#302840] bg-[#0f0f1a] text-[#e8e0f0] hover:border-secondary hover:bg-[#1a1a2e] transition-all rounded-xl flex flex-col justify-between h-40 group relative overflow-hidden" data-category="TECH / DEV" data-title="SCIENCE &amp; TECHNOLOGY" data-topic="science" onclick="selectCard(this)" type="button"><div class="flex justify-between items-start w-full relative z-10"><span class="px-2 py-0.5 bg-[#1e1e30] text-secondary font-label text-[10px] uppercase font-bold tracking-widest border border-secondary/30 rounded">TECH / DEV</span><span class="material-symbols-outlined text-[#a098b0] group-hover:text-secondary text-2xl status-icon">check_box_outline_blank</span></div><div class="relative z-10"><div class="font-headline font-bold text-base sm:text-lg uppercase tracking-tight text-white group-hover:text-secondary transition-colors leading-tight">SCIENCE &amp; TECHNOLOGY</div><div class="flex items-center gap-2 mt-1.5 font-label text-xs font-semibold text-[#a098b0] uppercase tracking-wider"><span class="material-symbols-outlined text-sm">quiz</span><span>18 QUESTIONS</span><span>•</span><span>MEDIUM</span></div></div></button><!-- Card 3 --><button class="topic-card text-left p-4 sm:p-5 border border-[#302840] bg-[#0f0f1a] text-[#e8e0f0] hover:border-secondary hover:bg-[#1a1a2e] transition-all rounded-xl flex flex-col justify-between h-40 group relative overflow-hidden" data-category="BREWERY" data-title="CRAFT BEER &amp; ALES" data-topic="beer" onclick="selectCard(this)" type="button"><div class="flex justify-between items-start w-full relative z-10"><span class="px-2 py-0.5 bg-[#1e1e30] text-secondary font-label text-[10px] uppercase font-bold tracking-widest border border-secondary/30 rounded">BREWERY</span><span class="material-symbols-outlined text-[#a098b0] group-hover:text-secondary text-2xl status-icon">check_box_outline_blank</span></div><div class="relative z-10"><div class="font-headline font-bold text-base sm:text-lg uppercase tracking-tight text-white group-hover:text-secondary transition-colors leading-tight">CRAFT BEER &amp; ALES</div><div class="flex items-center gap-2 mt-1.5 font-label text-xs font-semibold text-[#a098b0] uppercase tracking-wider"><span class="material-symbols-outlined text-sm">quiz</span><span>15 QUESTIONS</span><span>•</span><span>FUN</span></div></div></button><!-- Card 4 --><button class="topic-card text-left p-4 sm:p-5 border border-[#302840] bg-[#0f0f1a] text-[#e8e0f0] hover:border-secondary hover:bg-[#1a1a2e] transition-all rounded-xl flex flex-col justify-between h-40 group relative overflow-hidden" data-category="CARTOGRAPHY" data-title="WORLD HISTORY &amp; GEO" data-topic="history" onclick="selectCard(this)" type="button"><div class="flex justify-between items-start w-full relative z-10"><span class="px-2 py-0.5 bg-[#1e1e30] text-secondary font-label text-[10px] uppercase font-bold tracking-widest border border-secondary/30 rounded">CARTOGRAPHY</span><span class="material-symbols-outlined text-[#a098b0] group-hover:text-secondary text-2xl status-icon">check_box_outline_blank</span></div><div class="relative z-10"><div class="font-headline font-bold text-base sm:text-lg uppercase tracking-tight text-white group-hover:text-secondary transition-colors leading-tight">WORLD HISTORY &amp; GEO</div><div class="flex items-center gap-2 mt-1.5 font-label text-xs font-semibold text-[#a098b0] uppercase tracking-wider"><span class="material-symbols-outlined text-sm">quiz</span><span>15 QUESTIONS</span><span>•</span><span>EXPERT</span></div></div></button><!-- Card 5 --><button class="topic-card text-left p-4 sm:p-5 border border-[#302840] bg-[#0f0f1a] text-[#e8e0f0] hover:border-secondary hover:bg-[#1a1a2e] transition-all rounded-xl flex flex-col justify-between h-40 group relative overflow-hidden" data-category="MUSIC &amp; AUDIO" data-title="80S &amp; 90S MUSIC TRIVIA" data-topic="music" onclick="selectCard(this)" type="button"><div class="flex justify-between items-start w-full relative z-10"><span class="px-2 py-0.5 bg-[#1e1e30] text-secondary font-label text-[10px] uppercase font-bold tracking-widest border border-secondary/30 rounded">MUSIC &amp; AUDIO</span><span class="material-symbols-outlined text-[#a098b0] group-hover:text-secondary text-2xl status-icon">check_box_outline_blank</span></div><div class="relative z-10"><div class="font-headline font-bold text-base sm:text-lg uppercase tracking-tight text-white group-hover:text-secondary transition-colors leading-tight">80S &amp; 90S MUSIC TRIVIA</div><div class="flex items-center gap-2 mt-1.5 font-label text-xs font-semibold text-[#a098b0] uppercase tracking-wider"><span class="material-symbols-outlined text-sm">quiz</span><span>25 QUESTIONS</span><span>•</span><span>BALANCED</span></div></div></button><!-- Card 6 --><button class="topic-card text-left p-4 sm:p-5 border border-[#302840] bg-[#0f0f1a] text-[#e8e0f0] hover:border-secondary hover:bg-[#1a1a2e] transition-all rounded-xl flex flex-col justify-between h-40 group relative overflow-hidden" data-category="GAMING" data-title="VIDEO GAME LORE" data-topic="gaming" onclick="selectCard(this)" type="button"><div class="flex justify-between items-start w-full relative z-10"><span class="px-2 py-0.5 bg-[#1e1e30] text-secondary font-label text-[10px] uppercase font-bold tracking-widest border border-secondary/30 rounded">GAMING</span><span class="material-symbols-outlined text-[#a098b0] group-hover:text-secondary text-2xl status-icon">check_box_outline_blank</span></div><div class="relative z-10"><div class="font-headline font-bold text-base sm:text-lg uppercase tracking-tight text-white group-hover:text-secondary transition-colors leading-tight">VIDEO GAME LORE</div><div class="flex items-center gap-2 mt-1.5 font-label text-xs font-semibold text-[#a098b0] uppercase tracking-wider"><span class="material-symbols-outlined text-sm">quiz</span><span>20 QUESTIONS</span><span>•</span><span>HARD</span></div></div></button></div><!-- No Results State (Hidden by default) --><div class="hidden py-10 text-center font-label text-xs text-[#a098b0] uppercase tracking-widest" id="no-results"><span class="material-symbols-outlined text-3xl text-primary mb-2 block">search_off</span>NO THEMES MATCHING YOUR QUERY</div><!-- Retro Arcade Pagination --><div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-[#302840] font-label text-xs"><div class="text-[#a098b0] uppercase font-semibold tracking-wider" id="pagination-info">SHOWING <span class="text-white font-mono font-bold">1–6</span> OF <span class="text-secondary font-mono font-bold">24</span> TOPICS</div><div class="inline-flex items-center gap-1.5"><button class="px-2.5 py-1.5 bg-[#0f0f1a] border border-[#302840] text-[#a098b0] hover:text-white hover:border-secondary rounded transition-colors uppercase font-bold flex items-center justify-center disabled:opacity-40" disabled="" type="button"><span class="material-symbols-outlined text-sm">chevron_left</span></button><button class="w-7 h-7 bg-primary text-white font-bold rounded flex items-center justify-center shadow-[0_0_8px_#ff2d78]" type="button">1</button><button class="w-7 h-7 bg-[#0f0f1a] border border-[#302840] text-[#a098b0] hover:text-white hover:border-secondary rounded flex items-center justify-center transition-colors font-bold" type="button">2</button><button class="w-7 h-7 bg-[#0f0f1a] border border-[#302840] text-[#a098b0] hover:text-white hover:border-secondary rounded flex items-center justify-center transition-colors font-bold" type="button">3</button><button class="w-7 h-7 bg-[#0f0f1a] border border-[#302840] text-[#a098b0] hover:text-white hover:border-secondary rounded flex items-center justify-center transition-colors font-bold" type="button">4</button><button class="px-2.5 py-1.5 bg-[#0f0f1a] border border-[#302840] text-[#a098b0] hover:text-white hover:border-secondary rounded transition-colors uppercase font-bold flex items-center justify-center" type="button"><span class="material-symbols-outlined text-sm">chevron_right</span></button></div></div></section>
+<!-- SECTION 2: HOST IDENTIFIER -->
+</div>
+<!-- Right Column: Invites & Launch (5 cols) -->
+<div class="lg:col-span-5 flex flex-col gap-8">
+<!-- SECTION 3: PLAYER INVITATIONS -->
+<section class="bg-[#141422]/95 backdrop-blur-xl p-6 border border-[#302840] rounded-xl relative shadow-[0_0_25px_rgba(0,0,0,0.5)] flex flex-col pb-6">
+<!-- Cyber Corner Accents -->
+<div class="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-primary"></div>
+<div class="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-secondary"></div>
+<div class="flex items-center justify-between pb-4 mb-6 border-b border-[#302840]">
+<div class="flex items-center gap-3">
+<span class="w-7 h-7 bg-primary text-white font-headline font-bold text-sm flex items-center justify-center rounded shadow-[0_0_10px_#ff2d78]">2</span>
+<h2 class="font-headline font-bold text-xl uppercase tracking-tight text-white">INVITE COMPETITORS</h2>
+</div>
+</div>
+<!-- Direct URL Link Block -->
+<div>
+<span class="font-label text-xs font-bold uppercase tracking-wider text-[#a098b0] block mb-2">DIRECT ROOM DISPATCH URL</span>
+<div class="flex flex-col sm:flex-row items-stretch border border-secondary/60 bg-[#0f0f1a] rounded-lg overflow-hidden shadow-[0_0_12px_rgba(0,255,204,0.15)]">
+<div class="flex-1 px-3.5 py-2.5 font-mono text-xs font-semibold text-secondary truncate select-all flex items-center" id="invite-url-text">
+                https://pubquiz.app/join?room=8492
+              </div>
+<button class="px-4 py-2.5 bg-secondary text-[#001a1a] font-label text-xs uppercase font-extrabold tracking-wider hover:bg-white hover:text-black transition-colors flex items-center justify-center gap-1.5 border-t sm:border-t-0 sm:border-l border-secondary/50 shadow-[0_0_10px_rgba(0,255,204,0.4)]" id="copy-btn" onclick="copyInviteLink()" type="button">
+<span class="material-symbols-outlined text-sm" id="copy-icon">content_copy</span>
+<span id="copy-label">COPY LINK</span>
+</button>
+</div>
+</div>
+<!-- Email Dispatch -->
+<div>
+<!-- Email Badges Container -->
+<div class="flex flex-wrap gap-2 pt-1" id="email-chips">
+</div>
+</div>
+<!-- SMS Dispatch -->
+<!-- Informational Notice -->
+</section>
+<!-- SECTION 4: EXECUTION / ACTION BAR -->
+<section class="backdrop-blur-xl rounded-xl relative w-full">
+<!-- Cyber Corner Accents -->
+<div class="flex flex-col gap-4">
+<!-- Launch Button -->
+<button class="w-full py-5 px-6 bg-gradient-to-r from-primary to-[#ff4f93] text-white font-headline font-extrabold text-xl uppercase tracking-wider rounded-xl border border-pink-300/40 shadow-[0_0_30px_rgba(255,45,120,0.6)] hover:shadow-[0_0_40px_rgba(255,45,120,0.85)] hover:from-[#ff4f93] hover:to-primary transition-all flex items-center justify-center gap-3 group active:scale-[0.98]" onclick="launchGame()" type="button">
+<span class="drop-shadow-[0_0_10px_rgba(255,255,255,0.7)]">LAUNCH &amp; START GAME NOW</span>
+<span class="material-symbols-outlined text-2xl group-hover:translate-x-1.5 transition-transform drop-shadow-[0_0_8px_#ffffff]">rocket_launch</span>
+</button>
+<!-- Secondary Draft Action -->
+<!-- Host Status Ticker -->
+<div class="mt-2 text-center">
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+<!-- Toast Notification Bar for Actions -->
+<div class="fixed bottom-6 right-6 z-50 transform transition-transform duration-200 ease-out bg-[#141422] text-white border-2 border-primary rounded-xl px-6 py-4 shadow-[0_0_25px_rgba(255,45,120,0.4)] flex items-center gap-4 translate-y-32" id="toast">
+<span class="material-symbols-outlined text-secondary text-2xl drop-shadow-[0_0_8px_#00ffcc]" id="toast-icon">check_circle</span>
+<div>
+<div class="font-headline font-bold text-sm tracking-wide uppercase text-white" id="toast-title">INVALID FORMAT</div>
+<div class="font-body text-xs text-[#a098b0]" id="toast-msg">Please enter a valid teammate email address.</div>
+</div>
+</div>
+<script>
+    // Topic Selection Toggle
+    const topicCards = document.querySelectorAll('.topic-card');
+    topicCards.forEach(card => {
+      card.addEventListener('click', () => {
+        topicCards.forEach(c => {
+          c.classList.remove('bg-[#1a0010]', 'text-white', 'border-primary', 'neon-glow-pink');
+          c.classList.add('bg-[#0f0f1a]', 'text-[#e8e0f0]', 'border-[#302840]');
+          const icon = c.querySelector('.material-symbols-outlined:not([class*="text-[130px]"])');
+          if (icon && icon.textContent.includes('check_box')) icon.textContent = 'check_box_outline_blank';
+        });
+
+        card.classList.remove('bg-[#0f0f1a]', 'text-[#e8e0f0]', 'border-[#302840]');
+        card.classList.add('bg-[#1a0010]', 'text-white', 'border-primary', 'neon-glow-pink');
+        const icon = card.querySelector('.material-symbols-outlined:not([class*="text-[130px]"])');
+        if (icon) icon.textContent = 'check_box';
+        
+        showToast('TOPIC UPDATED', 'Selected quiz topic applied to room #8492');
+      });
+    });
+
+    // Copy Link function
+    function copyInviteLink() {
+      const linkText = document.getElementById('invite-url-text').innerText.trim();
+      navigator.clipboard.writeText(linkText).then(() => {
+        const copyLabel = document.getElementById('copy-label');
+        const copyIcon = document.getElementById('copy-icon');
+        copyLabel.textContent = 'COPIED!';
+        copyIcon.textContent = 'done';
+        showToast('LINK SECURED', 'Invite URL copied. Share with your pub team.');
+        setTimeout(() => {
+          copyLabel.textContent = 'COPY LINK';
+          copyIcon.textContent = 'content_copy';
+        }, 2200);
+      });
+    }
+
+    // Add email chips
+    function addEmailChip() {
+      const input = document.getElementById('email-input');
+      const val = input.value.trim();
+      if (!val || !val.includes('@')) {
+        showToast('INVALID FORMAT', 'Please enter a valid teammate email address.');
+        return;
+      }
+      
+      const container = document.getElementById('email-chips');
+      const chip = document.createElement('div');
+      chip.className = 'inline-flex items-center gap-2 px-3 py-1 bg-[#1e1e30] border border-secondary/40 rounded font-label text-xs font-semibold uppercase tracking-wide text-secondary shadow-[0_0_8px_rgba(0,255,204,0.15)]';
+      const label = document.createElement('span');
+      label.textContent = val;
+      chip.appendChild(label);
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'hover:text-primary transition-colors flex items-center';
+      closeBtn.addEventListener('click', function () {
+        chip.remove();
+      });
+      const closeIcon = document.createElement('span');
+      closeIcon.className = 'material-symbols-outlined text-[16px]';
+      closeIcon.textContent = 'close';
+      closeBtn.appendChild(closeIcon);
+      chip.appendChild(closeBtn);
+      container.appendChild(chip);
+      input.value = '';
+      showToast('INVITE QUEUED', `Invite voucher reserved for ${val}`);
+    }
+
+    // SMS dispatch simulation
+    function sendSmsAlert() {
+      const phone = document.getElementById('sms-phone').value.trim();
+      const code = document.getElementById('country-code').value;
+      if (!phone) {
+        showToast('EMPTY FIELD', 'Provide a mobile number for SMS link dispatch.');
+        return;
+      }
+      showToast('DISPATCHED SMS', `Joining token broadcast to ${code} ${phone}`);
+      document.getElementById('sms-phone').value = '';
+    }
+
+    // Toast Utility
+    let toastTimeout;
+    function showToast(title, msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-title').textContent = title;
+      document.getElementById('toast-msg').textContent = msg;
+      
+      toast.classList.remove('translate-y-32');
+      toast.classList.add('translate-y-0');
+      
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-32');
+        toast.classList.remove('translate-y-0');
+      }, 3000);
+    }
+
+    // Save Draft
+    function saveDraft() {
+      showToast('STATE COMMITTED', 'Room draft configuration stored locally.');
+    }
+
+    // Launch
+    function launchGame() {
+      const host = document.getElementById('host-screen-name').value || 'Host';
+      showToast('DEPLOYING LOBBY', `Initializing Game Server for ${host}...`);
+    }
+
+    // Test ping
+    function testPing() {
+      const btnText = document.getElementById('ping-text');
+      btnText.textContent = '19ms [EXCELLENT]';
+      setTimeout(() => {
+        btnText.textContent = 'TEST SYNC PING';
+      }, 2500);
+    }
+  </script>
+</div></main><footer class="w-full bg-[#0a0a12] border-t-2 border-[#302840] py-5 px-6 md:px-12 flex flex-col md:flex-row justify-between items-center text-xs font-label uppercase tracking-widest text-[#a098b0] z-20"><div class="font-bold tracking-widest text-sm flex items-center gap-2 font-headline text-white"><span class="material-symbols-outlined text-base text-primary shadow-[0_0_8px_#ff2d78]" style="font-variation-settings: &quot;FILL&quot; 1;">quiz</span>PUB QUIZ</div><div class="flex items-center gap-8 font-bold"><a class="hover:text-secondary transition-colors underline decoration-secondary/50 underline-offset-4" href="#">TERMS &amp; CONDITIONS</a><a class="hover:text-secondary transition-colors underline decoration-secondary/50 underline-offset-4" href="#">PRIVACY POLICY</a></div><div class="text-[11px] text-[#5a5068] mt-2 md:mt-0 font-normal">© 2024. ALL RIGHTS RESERVED.</div></footer>
+
+
+</body></html>

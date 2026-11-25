@@ -1,0 +1,14 @@
+---
+description: Core architecture, security, cost guardrails, and Paul Duvall lifecycle rules
+alwaysApply: true
+---
+# Core Architecture & Guardrails
+- **Stack:** Node.js 24, Express, Cloud Firestore (`@google-cloud/firestore`), FirebaseUI Auth, Tailwind CSS v4 (`@tailwindcss/browser@4` only). The Neon Tokyo player frontend does not use DaisyUI. Shared player chrome lives in `public/styles/neon-tokyo.css`, extracted from the Stitch exports in `design/player/*/code.html` (`.cyber-grid`, `.neon-glow-pink`, `.neon-glow-cyan`, the Stitch color tokens, and `Sora` / `Space Grotesk` / `Inter`).
+- **Database Isolation:** Keep all Firestore queries in `db.js` with an in-memory mock when `process.env.NODE_ENV === 'test'` so `npm test` runs offline without GCP credentials.
+- **Anti-Cheat Split:** Public room state lives in `game_rooms/{roomId}` (never include `correctAnswerId` or `explanation`). Answer keys live exclusively in `game_room_secrets/{roomId}` and are graded server-side.
+- **Anti-cheat option keys:** Never derive `correctAnswerId` or correct option slot from public `questionId` patterns (for example modulo the trailing index). Seed data must use author-chosen placements; `buildDeck` must shuffle option order per question with injectable RNG and remap `correctAnswerId` after shuffle.
+- **Auth & Future Admin SSO:** Route all identity checks through `auth.js`. Support FirebaseUI (Google, SMS, Apple, Anonymous Guest) for players, and read `ADMIN_ALLOWED_DOMAIN` / `ADMIN_EMAILS` from `process.env` (never hardcode secrets).
+- **Producer != Grader:** Never self-certify a completed slice in the same chat that wrote it; always run `/evaluate-slice` in a fresh chat before committing.
+- **Content separation:** Never hardcode legal prose, `footer_links`, or gateway/marketing UI copy in templates (`lib/player-layout.js`, `lib/player-pages.js`, `index.js`). All static copy lives in `content/site-content.json`; routes and templates consume it only via `lib/content-store.js` so a future Admin Portal can replace the JSON file with Firestore without template churn. Markdown bodies MUST be parsed and sanitized in `content-store` (`marked` + `sanitize-html`) before any HTML reaches a response.
+- **No regex HTML rewriting:** Do not use regular expressions to rewrite HTML emitted by `sanitize-html` (breaks nested lists). Style legal Markdown via `transformTags` class maps and `public/styles/neon-tokyo.css` selectors only.
+- **URL & slug validation:** `footer_links[].path` must match `/^[a-z0-9]+(?:-[a-z0-9]+)*$/` and reject reserved slugs (`admin`, `api`, `health`, `dashboard`) at load time in `content-store`. Never build `href="/${slug}"` without `validateFooterLinkPath`. Sanitized CMS HTML must block protocol-relative `href` values (`//…`), strip author `class` in `transformTags` (never merge), and apply Neon Tokyo typography only from `content-store`.

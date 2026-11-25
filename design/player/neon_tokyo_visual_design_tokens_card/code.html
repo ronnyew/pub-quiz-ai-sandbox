@@ -1,0 +1,352 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neon Tokyo — Visual Design Tokens</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&amp;family=Space+Grotesk:wght@500;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Sora', 'sans-serif'],
+            mono: ['Space Grotesk', 'JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            neon: {
+              pink: '#ff2d78',
+              cyan: '#00ffcc',
+              purple: '#9d4edd',
+              bg: '#050811',
+              surface: '#0c101c',
+              container: '#151b2d',
+              border: '#1e293b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #050811;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(255, 45, 120, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 255, 204, 0.08) 0%, transparent 40%),
+        linear-gradient(rgba(30, 41, 59, 0.25) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+      color: #ffffff;
+      font-family: 'Sora', sans-serif;
+    }
+    .neon-border-pink {
+      border: 1px solid #ff2d78;
+      box-shadow: 0 0 15px rgba(255, 45, 120, 0.35), inset 0 0 10px rgba(255, 45, 120, 0.15);
+    }
+    .neon-border-cyan {
+      border: 1px solid #00ffcc;
+      box-shadow: 0 0 15px rgba(0, 255, 204, 0.35), inset 0 0 10px rgba(0, 255, 204, 0.15);
+    }
+    .hud-bracket {
+      position: relative;
+    }
+    .hud-bracket::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid #00ffcc;
+      border-left: 2px solid #00ffcc;
+    }
+    .hud-bracket::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 10px;
+      height: 10px;
+      border-bottom: 2px solid #ff2d78;
+      border-right: 2px solid #ff2d78;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-6 md:p-12 flex items-center justify-center">
+
+  <div class="w-full max-w-6xl mx-auto space-y-8">
+    
+    <!-- Top System Header -->
+    <header class="flex flex-col sm:flex-row sm:items-end justify-between border-b border-slate-800 pb-6 gap-4">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#ff2d78]/10 text-[#ff2d78] border border-[#ff2d78]/30">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#ff2d78] animate-pulse"></span>
+            SYS:TOKENS // V2.4
+          </span>
+          <span class="text-xs font-mono tracking-widest text-slate-400">ARCADE ENGINE HUD</span>
+        </div>
+        <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight">
+          NEON TOKYO <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff2d78] via-[#9d4edd] to-[#00ffcc]">DESIGN TOKENS</span>
+        </h1>
+        <p class="text-slate-400 text-sm mt-1">North Star: <span class="text-white font-medium">"Electric Nightscape"</span> — Cyberpunk retro-futurism &amp; high-energy telemetry</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="bg-[#0c101c] border border-slate-800 rounded px-4 py-2 text-right">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">DESIGN SYSTEM ID</span>
+          <span class="font-mono text-sm text-[#00ffcc] font-bold">DS_01 // SORA_800</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Token Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Column 1: Color Palette Tokens -->
+      <section class="lg:col-span-2 space-y-6">
+        
+        <div class="bg-[#0c101c]/90 border border-slate-800 rounded-lg p-6 hud-bracket">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-xs font-mono uppercase tracking-widest text-[#00ffcc] flex items-center gap-2">
+              <span class="w-2 h-2 bg-[#00ffcc]"></span>
+              01 // Color Tokens &amp; Swatches
+            </h2>
+            <span class="text-[11px] font-mono text-slate-500">HEX / ROLE MAPPINGS</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            
+            <!-- Primary Pink -->
+            <div class="bg-[#151b2d] border border-slate-800/80 rounded p-3 relative group overflow-hidden">
+              <div class="h-16 rounded bg-[#ff2d78] flex items-end p-2 mb-2 shadow-[0_0_16px_rgba(255,45,120,0.4)]">
+                <span class="text-[11px] font-mono font-bold text-white bg-black/40 px-1.5 py-0.5 rounded">CTA &amp; 1st</span>
+              </div>
+              <div class="space-y-1">
+                <span class="text-xs font-mono text-white font-bold block">--color-primary</span>
+                <span class="text-xs font-mono text-[#ff2d78] block">#ff2d78</span>
+                <p class="text-[11px] text-slate-400">Launch CTA, Active Answer, #1 Badges</p>
+              </div>
+            </div>
+
+            <!-- Secondary Cyan -->
+            <div class="bg-[#151b2d] border border-slate-800/80 rounded p-3 relative group overflow-hidden">
+              <div class="h-16 rounded bg-[#00ffcc] flex items-end p-2 mb-2 shadow-[0_0_16px_rgba(0,255,204,0.4)]">
+                <span class="text-[11px] font-mono font-bold text-black bg-white/60 px-1.5 py-0.5 rounded">Telemetry</span>
+              </div>
+              <div class="space-y-1">
+                <span class="text-xs font-mono text-white font-bold block">--color-secondary</span>
+                <span class="text-xs font-mono text-[#00ffcc] block">#00ffcc</span>
+                <p class="text-[11px] text-slate-400">Room PIN, Radar, Verified states</p>
+              </div>
+            </div>
+
+            <!-- Tertiary Purple -->
+            <div class="bg-[#151b2d] border border-slate-800/80 rounded p-3 relative group overflow-hidden">
+              <div class="h-16 rounded bg-[#9d4edd] flex items-end p-2 mb-2 shadow-[0_0_16px_rgba(157,78,221,0.4)]">
+                <span class="text-[11px] font-mono font-bold text-white bg-black/40 px-1.5 py-0.5 rounded">Gradients</span>
+              </div>
+              <div class="space-y-1">
+                <span class="text-xs font-mono text-white font-bold block">--color-tertiary</span>
+                <span class="text-xs font-mono text-[#9d4edd] block">#9d4edd</span>
+                <p class="text-[11px] text-slate-400">Multi-stop gradients, Radar core</p>
+              </div>
+            </div>
+
+            <!-- Canvas Background -->
+            <div class="bg-[#151b2d] border border-slate-800/80 rounded p-3 relative">
+              <div class="h-16 rounded bg-[#050811] border border-slate-700 flex items-end p-2 mb-2">
+                <span class="text-[11px] font-mono font-bold text-slate-300 bg-white/10 px-1.5 py-0.5 rounded">Base</span>
+              </div>
+              <div class="space-y-1">
+                <span class="text-xs font-mono text-white font-bold block">--bg-canvas</span>
+                <span class="text-xs font-mono text-slate-300 block">#050811</span>
+                <p class="text-[11px] text-slate-400">Midnight space with CRT dot matrix</p>
+              </div>
+            </div>
+
+            <!-- Surface Card -->
+            <div class="bg-[#151b2d] border border-slate-800/80 rounded p-3 relative">
+              <div class="h-16 rounded bg-[#0c101c] border border-slate-700 flex items-end p-2 mb-2">
+                <span class="text-[11px] font-mono font-bold text-slate-300 bg-white/10 px-1.5 py-0.5 rounded">Surface</span>
+              </div>
+              <div class="space-y-1">
+                <span class="text-xs font-mono text-white font-bold block">--bg-surface</span>
+                <span class="text-xs font-mono text-slate-300 block">#0c101c</span>
+                <p class="text-[11px] text-slate-400">Panels, input shells, table bodies</p>
+              </div>
+            </div>
+
+            <!-- Elevated Container -->
+            <div class="bg-[#151b2d] border border-slate-800/80 rounded p-3 relative">
+              <div class="h-16 rounded bg-[#151b2d] border border-slate-600 flex items-end p-2 mb-2">
+                <span class="text-[11px] font-mono font-bold text-slate-300 bg-white/10 px-1.5 py-0.5 rounded">High Container</span>
+              </div>
+              <div class="space-y-1">
+                <span class="text-xs font-mono text-white font-bold block">--bg-container</span>
+                <span class="text-xs font-mono text-slate-300 block">#151b2d</span>
+                <p class="text-[11px] text-slate-400">Question cards, modal dialogue</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Typography & Hierarchy Tokens -->
+        <div class="bg-[#0c101c]/90 border border-slate-800 rounded-lg p-6 hud-bracket">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-xs font-mono uppercase tracking-widest text-[#ff2d78] flex items-center gap-2">
+              <span class="w-2 h-2 bg-[#ff2d78]"></span>
+              02 // Typography Tokens
+            </h2>
+            <span class="text-[11px] font-mono text-slate-500">SORA + SPACE GROTESK</span>
+          </div>
+
+          <div class="space-y-4">
+            
+            <!-- Display Hero -->
+            <div class="p-3 bg-[#151b2d]/60 rounded border border-slate-800 flex flex-col md:flex-row md:items-baseline justify-between gap-2">
+              <div>
+                <span class="text-[10px] font-mono text-slate-500 uppercase">--font-display • Sora 800-900</span>
+                <div class="text-2xl md:text-3xl font-extrabold uppercase tracking-tight text-white">
+                  START A <span class="text-[#ff2d78]">GAME</span>
+                </div>
+              </div>
+              <span class="text-xs font-mono text-slate-400">32-48px / Tight / Extrabold</span>
+            </div>
+
+            <!-- HUD Monospace Label -->
+            <div class="p-3 bg-[#151b2d]/60 rounded border border-slate-800 flex flex-col md:flex-row md:items-baseline justify-between gap-2">
+              <div>
+                <span class="text-[10px] font-mono text-slate-500 uppercase">--font-hud • Space Grotesk / Mono 700</span>
+                <div class="font-mono text-sm uppercase tracking-widest text-[#00ffcc] font-bold">
+                  # 8492 // ROOM PIN RESERVATION
+                </div>
+              </div>
+              <span class="text-xs font-mono text-slate-400">11-14px / Widest / Bold</span>
+            </div>
+
+            <!-- Body Regular -->
+            <div class="p-3 bg-[#151b2d]/60 rounded border border-slate-800 flex flex-col md:flex-row md:items-baseline justify-between gap-2">
+              <div>
+                <span class="text-[10px] font-mono text-slate-500 uppercase">--font-body • Sora 400-500</span>
+                <div class="text-sm text-slate-300">
+                  Synchronous multi-pod trivia combat. Outsmart rival nodes and climb global leaderboards.
+                </div>
+              </div>
+              <span class="text-xs font-mono text-slate-400">14-15px / Relaxed / Regular</span>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Column 2: Components, Elevation, & Specs -->
+      <section class="space-y-6">
+        
+        <!-- Component Specs -->
+        <div class="bg-[#0c101c]/90 border border-slate-800 rounded-lg p-6 hud-bracket">
+          <h2 class="text-xs font-mono uppercase tracking-widest text-[#00ffcc] flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 bg-[#00ffcc]"></span>
+            03 // Interactive Components
+          </h2>
+
+          <div class="space-y-4">
+            
+            <!-- Primary Action Button -->
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block mb-1">BUTTON.PRIMARY // HOT PINK</span>
+              <button class="w-full py-3 px-4 rounded bg-[#ff2d78] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,45,120,0.5)] border border-[#ff669d]">
+                <span>LAUNCH &amp; START GAME NOW</span>
+                <svg class="w-4 h-4 inline-block text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.63 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.58-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path></svg>
+              </button>
+            </div>
+
+            <!-- Active Answer Target -->
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block mb-1">CARD.SELECTED // LOCKED-IN</span>
+              <div class="p-3 rounded bg-[#151b2d] neon-border-pink flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-6 h-6 rounded bg-[#ff2d78] text-white font-mono text-xs flex items-center justify-center font-bold">A</span>
+                  <span class="text-xs font-bold text-white">Reinheitsgebot</span>
+                </div>
+                <span class="text-[10px] font-mono bg-[#ff2d78] text-white px-2 py-0.5 rounded font-bold">SELECTED</span>
+              </div>
+            </div>
+
+            <!-- Telemetry Pill & Tag -->
+            <div>
+              <span class="text-[10px] font-mono text-slate-400 block mb-1">BADGE.TELEMETRY // ELECTRIC CYAN</span>
+              <div class="flex items-center gap-2">
+                <div class="px-3 py-1.5 rounded bg-[#00ffcc]/10 neon-border-cyan text-[#00ffcc] font-mono text-xs font-bold flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-[#00ffcc] animate-ping"></span>
+                  PIN # 8492
+                </div>
+                <div class="px-2.5 py-1.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs">
+                  4 PLAYERS
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- System Radius & Shadows -->
+        <div class="bg-[#0c101c]/90 border border-slate-800 rounded-lg p-6 hud-bracket">
+          <h2 class="text-xs font-mono uppercase tracking-widest text-[#ff2d78] flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 bg-[#ff2d78]"></span>
+            04 // Radius &amp; Elevation
+          </h2>
+
+          <div class="grid grid-cols-2 gap-3 text-center">
+            
+            <div class="p-3 bg-[#151b2d] rounded border border-slate-800">
+              <span class="font-mono text-xs text-[#00ffcc] font-bold block">4px - 8px</span>
+              <span class="text-[10px] font-mono text-slate-400">ROUND_FOUR / EIGHT</span>
+            </div>
+
+            <div class="p-3 bg-[#151b2d] rounded-full border border-slate-800">
+              <span class="font-mono text-xs text-[#ff2d78] font-bold block">9999px</span>
+              <span class="text-[10px] font-mono text-slate-400">ROUND_FULL (PILLS)</span>
+            </div>
+
+            <div class="p-3 bg-[#151b2d] rounded border border-[#ff2d78]/40 shadow-[0_0_15px_rgba(255,45,120,0.3)] col-span-2 text-left flex items-center justify-between">
+              <div>
+                <span class="font-mono text-xs text-white font-bold block">Glow Drop Shadow</span>
+                <span class="text-[10px] font-mono text-slate-400">0 0 20px rgba(255,45,120,0.5)</span>
+              </div>
+              <span class="text-xs font-mono text-[#ff2d78] font-bold">20px BLUR</span>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- Standard Persistent Footer Reference -->
+    <footer class="pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
+      <div class="flex items-center gap-3">
+        <span class="px-2 py-0.5 rounded bg-[#ff2d78]/10 text-[#ff2d78] border border-[#ff2d78]/30 font-bold">PUB QUIZ</span>
+        <span>NEON TOKYO DESIGN SPEC</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <a href="#" class="hover:text-[#00ffcc] transition-colors">TERMS &amp; CONDITIONS</a>
+        <a href="#" class="hover:text-[#00ffcc] transition-colors">PRIVACY POLICY</a>
+      </div>
+      <div>
+        <span>© 2024 RETRO ARCADE NETWORK // TOKEN REPOSITORY</span>
+      </div>
+    </footer>
+
+  </div>
+
+
+
+
+
+</body></html>

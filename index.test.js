@@ -33,11 +33,11 @@ test('GET /health returns ok status and version', async () => {
   assert.deepEqual(JSON.parse(res.body), { status: 'ok', version: '0.1.0' });
 });
 
-test('GET / returns the taproom landing page', async () => {
+test('GET / serves Neon Tokyo gateway (not legacy taproom)', async () => {
   const res = await request('/');
   assert.equal(res.status, 200);
   assert.match(res.headers['content-type'], /text\/html/);
-  assert.match(res.body, /The AI Taproom Quiz/);
-  assert.match(res.body, /<button[^>]*disabled[^>]*>Start Quiz \(Coming in Phase 2\)<\/button>/);
-  assert.match(res.body, /Server online/);
+  assert.doesNotMatch(res.body, /The AI Taproom Quiz/);
+  assert.match(res.body, /data-theme="taproom"/);
+  assert.match(res.body, /Pub Quiz/i);
 });

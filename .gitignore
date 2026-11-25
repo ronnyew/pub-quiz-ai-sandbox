@@ -1,15 +1,7 @@
-# Dependencies
 node_modules/
-
-# Environment variables & secrets
+.data/
 .env
 .env.*
-*.pem
-*.key
-
-# macOS system files
+!.env.example
 .DS_Store
-
-# Logs
-npm-debug.log*
-logs/
+*.log

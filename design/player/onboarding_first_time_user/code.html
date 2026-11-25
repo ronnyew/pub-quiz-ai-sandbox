@@ -1,0 +1,271 @@
+<!DOCTYPE html><html class="dark" lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_blank" name="shell-type"><title>Pub Quiz - Gateway</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Sora:wght@600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    overscroll-behavior: none;
+  }
+  main > :first-child {
+    margin-top: 0 !important;
+  }
+  main > :last-child {
+    margin-bottom: 0 !important;
+  }
+}
+::-webkit-scrollbar {
+  display: none;
+}
+.neon-glow-pink {
+  box-shadow: 0 0 25px rgba(255, 45, 120, 0.4), inset 0 0 15px rgba(255, 45, 120, 0.2);
+}
+.neon-glow-cyan {
+  box-shadow: 0 0 25px rgba(0, 255, 204, 0.35), inset 0 0 10px rgba(0, 255, 204, 0.15);
+}
+.cyber-grid {
+  background-image: linear-gradient(to right, rgba(255, 45, 120, 0.05) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(0, 255, 204, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "on-error-container": "#ffa0a0",
+          "tertiary-container": "#665200",
+          "primary": "#ff2d78",
+          "secondary-container": "#004d3d",
+          "outline": "#5a5068",
+          "surface-container-high": "#1e1e30",
+          "on-tertiary": "#1a1000",
+          "primary-container": "#b3004e",
+          "on-tertiary-fixed-variant": "#665200",
+          "surface": "#0f0f1a",
+          "secondary-fixed": "#c0fff4",
+          "on-background": "#e8e0f0",
+          "on-surface": "#e8e0f0",
+          "error-container": "#3d0f0f",
+          "on-primary-fixed": "#3d0020",
+          "on-primary": "#1a0010",
+          "on-secondary-fixed-variant": "#004d4d",
+          "surface-tint": "#ff2d78",
+          "on-surface-variant": "#a098b0",
+          "on-tertiary-fixed": "#1a1000",
+          "background": "#0a0a12",
+          "surface-bright": "#1a1a2e",
+          "primary-fixed-dim": "#ff80aa",
+          "primary-fixed": "#ffe0ec",
+          "on-secondary-container": "#c0fff4",
+          "inverse-on-surface": "#0a0a12",
+          "surface-container-highest": "#28283e",
+          "on-secondary-fixed": "#001a1a",
+          "surface-container-low": "#111118",
+          "surface-container-lowest": "#0a0a12",
+          "surface-dim": "#0f0f1a",
+          "tertiary-fixed-dim": "#ffe04a",
+          "on-error": "#1a0000",
+          "error": "#ff4444",
+          "on-secondary": "#001a1a",
+          "surface-variant": "#1e1e30",
+          "tertiary": "#ffe04a",
+          "on-primary-fixed-variant": "#8c0038",
+          "inverse-surface": "#e8e0f0",
+          "surface-container": "#141422",
+          "secondary": "#00ffcc",
+          "on-primary-container": "#ffe0ec",
+          "tertiary-fixed": "#fff0c0",
+          "inverse-primary": "#8c0038",
+          "outline-variant": "#302840",
+          "secondary-fixed-dim": "#00e6b8",
+          "on-tertiary-container": "#fff0c0"
+        },
+        borderRadius: {
+          DEFAULT: "0.125rem",
+          lg: "0.25rem",
+          xl: "0.5rem",
+          full: "0.75rem"
+        },
+        spacing: {},
+        fontFamily: {
+          headline: ["Sora", "sans-serif"],
+          display: ["Sora", "sans-serif"],
+          body: ["Inter", "sans-serif"],
+          label: ["Space Grotesk", "monospace", "sans-serif"]
+        },
+        fontSize: {}
+      },
+    },
+  }
+</script></head><body class="bg-[#0a0a12] text-[#e8e0f0] font-body min-h-screen selection:bg-[#ff2d78] selection:text-white cyber-grid flex flex-col"><main class="w-full min-h-screen flex items-center justify-center bg-transparent flex-1 pt-12 px-12 pb-6"><div class="flex flex-col w-full items-center justify-center relative selection:bg-primary selection:text-white">
+<!-- Ambient Holographic Glow Spots -->
+<div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="absolute bottom-1/4 left-1/2 -translate-x-1/2 translate-y-1/4 w-[30rem] h-[30rem] bg-secondary/10 rounded-full blur-[140px] pointer-events-none"></div>
+<!-- Terminal Container Matrix -->
+<div class="relative w-full max-w-xl bg-surface-container/90 backdrop-blur-xl rounded-xl shadow-2xl p-6 sm:p-10 z-10">
+<!-- Cyber Corner Tech Brackets -->
+<div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-secondary pointer-events-none shadow-[0_0_8px_#00ffcc]"></div>
+<div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary pointer-events-none shadow-[0_0_8px_#ff2d78]"></div>
+<div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary pointer-events-none shadow-[0_0_8px_#ff2d78]"></div>
+<div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-secondary pointer-events-none shadow-[0_0_8px_#00ffcc]"></div>
+<!-- Top Status / Diagnostic Badge Bar -->
+
+<!-- Header & Mission Subtitle -->
+<div class="space-y-3 mb-8">
+<h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface tracking-tight uppercase leading-none">
+        SET YOUR <span class="text-primary [text-shadow:0_0_12px_rgba(255,45,120,0.6)]">PLAYER HANDLE</span>
+</h1>
+<p class="font-body text-sm sm:text-base text-on-surface-variant leading-relaxed">
+        Welcome to Pub Quiz. This handle will identify your buzzer on live stage projectors, match telemetry, and leaderboard broadcasts.
+      </p>
+</div>
+<!-- Interactive Onboarding Card Section -->
+<div class="space-y-6">
+<!-- Real-Time Cyber Card Avatar Preview -->
+
+<!-- Handle Input Control Area -->
+<div class="space-y-2">
+<div class="flex items-center justify-between">
+<label class="font-label text-xs uppercase tracking-wider font-semibold text-on-surface-variant flex items-center gap-1.5" for="handleInput">
+<span class="material-symbols-outlined text-sm text-secondary">terminal</span>
+            PLAYER SCREEN NAME / HANDLE
+          </label>
+<span class="font-label text-xs font-bold text-secondary flex items-center gap-1 tracking-wide" id="statusIndicator"><span class="material-symbols-outlined text-sm">check_circle</span> AVAILABLE</span>
+</div>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="font-headline font-bold text-lg text-secondary/70 group-focus-within:text-secondary group-focus-within:[text-shadow:0_0_8px_#00ffcc] transition-colors">@</span>
+</div>
+<input autocomplete="off" class="w-full bg-surface-container-lowest text-on-surface font-headline font-semibold text-base sm:text-lg pl-10 pr-20 py-3.5 rounded-lg border-2 border-outline-variant focus:border-secondary focus:outline-none focus:ring-0 focus:shadow-[0_0_20px_rgba(0,255,204,0.35)] transition-all placeholder:text-outline/60 placeholder:font-normal placeholder:font-body" id="handleInput" maxlength="18" placeholder="e.g. TriviaTitan, HopSeeker, QuizWhiz" spellcheck="false" type="text" value="HopSeeker_99">
+<div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none">
+<span class="font-label text-xs text-outline font-medium tracking-tight" id="charCount">12/18</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-[11px] font-label text-outline pt-0.5">
+<span>Rule: 3–18 characters, letters &amp; numbers</span>
+
+</div>
+</div>
+<!-- Quick Pick Generator Chips -->
+
+<!-- Action Button & Warning Box -->
+<div class="space-y-4 pt-3">
+<button class="w-full relative group overflow-hidden bg-primary hover:bg-primary-container text-white font-headline font-bold text-base py-4 px-6 rounded-lg shadow-[0_0_20px_rgba(255,45,120,0.4)] hover:shadow-[0_0_30px_rgba(255,45,120,0.65)] transition-all duration-200 uppercase tracking-wider flex items-center justify-center gap-2 active:scale-[0.99]" id="submitBtn" type="button">
+<span class="relative z-10 flex items-center gap-2">
+            LOCK IN HANDLE &amp; ENTER LOBBY
+            <span class="material-symbols-outlined text-lg transition-transform group-hover:translate-x-1">arrow_forward</span>
+</span>
+<div class="absolute inset-0 -translate-x-full group-hover:translate-x-full duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform"></div>
+</button>
+<!-- Terms / Notice Note -->
+<div class="flex items-center justify-center gap-2 text-center text-xs text-on-surface-variant font-body">
+<span class="material-symbols-outlined text-sm text-outline">verified_user</span>
+<span>You can update your display handle anytime in your profile settings.</span>
+</div>
+</div>
+</div>
+</div>
+<script>
+    (function() {
+      const handleInput = document.getElementById('handleInput');
+      const previewHandle = document.getElementById('previewHandle');
+      const charCount = document.getElementById('charCount');
+      const statusIndicator = document.getElementById('statusIndicator');
+      const rollBtn = document.getElementById('rollBtn');
+      const submitBtn = document.getElementById('submitBtn');
+      const presetChips = document.querySelectorAll('.preset-chip');
+      const avatarIcon = document.getElementById('avatarIcon');
+
+      const avatarPool = ['sports_esports', 'local_bar', 'electric_bolt', 'smart_toy', 'stadia_controller', 'rocket_launch'];
+      const randomHandles = [
+        'CyberBuzzer', 'NeonPint', 'BuzzerBeast', 'BarTriviaGod',
+        'AleMaster', 'QuantumStout', 'PixelPint', 'TriviaViper',
+        'SynthWave99', 'TurboHop', 'BrainSurge', 'ZeroLagQuiz'
+      ];
+
+      function sanitizeHandle(value) {
+        return value.replace(/[^a-zA-Z0-9_-]/g, '');
+      }
+
+      function updateState() {
+        let val = sanitizeHandle(handleInput.value);
+        handleInput.value = val;
+        charCount.textContent = val.length + '/18';
+
+        if (val.length === 0) {
+          previewHandle.textContent = 'ChooseHandle';
+          statusIndicator.className = 'font-label text-xs font-bold text-error flex items-center gap-1 tracking-wide';
+          statusIndicator.innerHTML = '<span class="material-symbols-outlined text-sm">cancel</span> REQUIRED';
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else if (val.length < 3) {
+          previewHandle.textContent = val;
+          statusIndicator.className = 'font-label text-xs font-bold text-tertiary flex items-center gap-1 tracking-wide';
+          statusIndicator.innerHTML = '<span class="material-symbols-outlined text-sm">warning</span> MIN 3 CHARS';
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+          previewHandle.textContent = val;
+          statusIndicator.className = 'font-label text-xs font-bold text-secondary flex items-center gap-1 tracking-wide';
+          statusIndicator.innerHTML = '<span class="material-symbols-outlined text-sm">check_circle</span> AVAILABLE';
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+      }
+
+      handleInput.addEventListener('input', updateState);
+
+      function setHandle(name) {
+        handleInput.value = name;
+        avatarIcon.textContent = avatarPool[Math.floor(Math.random() * avatarPool.length)];
+        updateState();
+      }
+
+      presetChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          setHandle(chip.textContent.trim());
+        });
+      });
+
+      rollBtn.addEventListener('click', () => {
+        const randomIndex = Math.floor(Math.random() * randomHandles.length);
+        const randomNum = Math.floor(Math.random() * 89 + 10);
+        setHandle(randomHandles[randomIndex] + '_' + randomNum);
+      });
+
+      submitBtn.addEventListener('click', () => {
+        if (handleInput.value.trim().length >= 3) {
+          submitBtn.innerHTML = `
+            <span class="flex items-center gap-2">
+              <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              INITIALIZING TELEMETRY...
+            </span>
+          `;
+          submitBtn.classList.add('opacity-80', 'pointer-events-none');
+          setTimeout(() => {
+            window.location.href = '#';
+          }, 600);
+        }
+      });
+
+      updateState();
+    })();
+  </script>
+</div></main><footer class="w-full bg-[#0a0a12] border-t-2 border-[#302840] py-5 px-6 sm:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-label uppercase tracking-widest z-20">
+<div class="font-bold text-sm tracking-widest font-headline text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-[#ff2d78] shadow-[0_0_8px_#ff2d78]" style="font-variation-settings: &quot;FILL&quot; 1;">quiz</span>
+    PUB QUIZ
+  </div>
+<div class="flex items-center gap-6 font-bold text-xs uppercase tracking-widest text-[#a098b0]">
+<a class="hover:text-[#00ffcc] transition-colors underline decoration-[#00ffcc]/50 underline-offset-4" href="#">TERMS &amp; CONDITIONS</a>
+<a class="hover:text-[#00ffcc] transition-colors underline decoration-[#00ffcc]/50 underline-offset-4" href="#">PRIVACY POLICY</a>
+</div>
+<div class="text-xs font-medium text-[#5a5068]">© 2024. ALL RIGHTS RESERVED.</div>
+</footer>
+
+
+
+</body></html>
