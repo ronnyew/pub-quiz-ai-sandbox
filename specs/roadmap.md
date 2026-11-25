@@ -1,8 +1,8 @@
 # Neon Tokyo MVP Roadmap
 
-**Status:** Awaiting Gate 1 Approval  
+**Status:** Gate 1 approved (2026-11-25)  
 **Source of truth for build order:** this file. Product intent comes from `specs/prd-neon-tokyo.md`. When the PRD and the architecture rules disagree, the resolutions in §1 win.  
-**Do not start Slice 1 until a human approves Gate 1.**
+**Build one slice at a time, in order, only when that slice is requested.**
 
 Each slice is one vertical cut: tests, server behavior, and the Neon Tokyo screen that proves it. Implement slices in order. A later slice may call modules from an earlier slice. It must not redesign them.
 
@@ -335,4 +335,4 @@ Stitch footers use `href="#"`. Implementation must not.
 
 ## 5. Gate 1
 
-Reply with approval, or with the slice numbers to change, before any application code is written.
+Approved on 2026-11-25. Slice 1 may start when requested. Later slices stay blocked until the previous slice is in place.
