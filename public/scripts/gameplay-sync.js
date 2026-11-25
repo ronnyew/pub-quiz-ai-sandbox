@@ -19,7 +19,7 @@
   const awaitingDot = document.getElementById('pq-awaiting-dot');
   const errorBanner = document.getElementById('pq-gameplay-error');
   const selectedLabel = configEl.getAttribute('data-selected-label') || 'SELECTED';
-  const advanceDelayMs = Number(configEl.getAttribute('data-advance-delay-ms')) || 3000;
+  const advanceDelayMs = Number(configEl.getAttribute('data-advance-delay-ms')) || 500;
   const questionBadgeTemplate = configEl.getAttribute('data-question-badge-template') || 'QUESTION {current} / {total}';
   const readyCountTemplate = configEl.getAttribute('data-ready-count-template') || '{ready} / {total} READY';
   const isHost = Boolean(config.isHost);
@@ -238,7 +238,12 @@ ${badge}
   function applyPayload(payload) {
     if (!payload) return;
     if (payload.status === 'COMPLETED') {
-      window.location.reload();
+      const pin = configEl.getAttribute('data-game-pin');
+      if (pin) {
+        window.location.href = `/rooms/${encodeURIComponent(pin)}/results`;
+      } else {
+        window.location.reload();
+      }
       return;
     }
     lastPayload = payload;

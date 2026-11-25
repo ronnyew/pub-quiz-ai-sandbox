@@ -285,7 +285,7 @@ Stitch footers use `href="#"`. Implementation must not.
 **Executable done-check.** `npm test` exits 0, and the suite asserts all of the following:
 
 - After launch, `game_rooms` documents have options and no `correctAnswerId`, `explanation`, or `sourceCitations`; the matching secrets document has the key and the citations
-- A correct answer inside the window scores `basePoints`; the same player’s second post is rejected; a correct answer after `closesAt` scores 0
+- A correct on-time answer adds `basePoints`; a wrong on-time answer subtracts `basePoints`; unanswered or post-`closesAt` submissions score 0; duplicate posts are rejected
 - `latencyMs` uses the timestamps passed into `grade` (injected clock), not the client body
 - The active-question HTTP body has `A`–`D` and no `explanation` or `sourceCitations`
 
@@ -298,7 +298,7 @@ Stitch footers use `href="#"`. Implementation must not.
 **In scope.**
 
 - Completion flips status after the last question closes and grades.
-- Podium (FR-10): rank by score descending, tie-break by lower average `latencyMs`, then `userId`. Champion card shows XP (sum of `pointsAwarded` for this match), correct count, average response seconds, and a streak (longest run of correct answers). `RETURN HOME →` links to `/dashboard`.
+- Podium (FR-10): rank by score descending, tie-break by lower average `latencyMs`, then `userId`. Leaderboard rows show correct count and average response seconds only (no in-row XP or streak labels). The signed-in player’s row links to `GET /rooms/:pin/breakdown?user=`. `RETURN HOME →` links to `/dashboard`.
 - Dashboard body replaces the Slice 3 placeholder: recent matches for this user. A row opens the breakdown drawer (FR-11) using the Tailwind overlay from `design/player/dashboard_with_match_modal/code.html` (including `.row-arrow`). The drawer is also a real document at `GET /rooms/:pin/breakdown?user=` so it is not an unlinked popup. Do not use a DaisyUI modal.
 - Metric cards: total score, accuracy, average speed, rank. Response log pages 5 rows at a time and shows the player’s choice, the verified answer, and speed. Verified answers are readable only when `status === COMPLETED`.
 - Pagination query `page` is an integer ≥ 1; out-of-range pages return an empty list, not a 500.
@@ -323,6 +323,7 @@ Stitch footers use `href="#"`. Implementation must not.
 - Breakdown page size is 5; page 2 returns the next slice only
 - A breakdown response for a `WAITING` or `ACTIVE` room does not include `correctAnswerId`, `explanation`, or `sourceCitations`. A `COMPLETED` breakdown may include all three
 - Results HTML contains `RETURN HOME` linking to `/dashboard`
+- The signed-in player’s results row links to `/rooms/:pin/breakdown?user=` and the HTML does not render podium streak or XP labels
 - Slice 1 legal routes and the Slice 5 secret split still pass
 
 ---

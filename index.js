@@ -1,6 +1,6 @@
 const path = require('node:path');
 const express = require('express');
-const { getFooterLinks, validateFooterLinkPath } = require('./lib/content-store');
+const { getFooterLinks, getStaticCopy, validateFooterLinkPath } = require('./lib/content-store');
 const {
   renderDashboardPage,
   renderGatewayPage,
@@ -9,9 +9,18 @@ const {
   renderGameplayPage,
   renderHostLobbyPage,
   renderJoinUnavailablePage,
+  renderBreakdownPage,
+  renderResultsPage,
   renderStaticContentPage,
   renderWaitingRoomPage,
 } = require('./lib/player-pages');
+const {
+  buildDashboardMatchSummaries,
+  buildMatchBreakdown,
+  listRecentMatchesForUser,
+  loadResultsBundle,
+  parseBreakdownPage,
+} = require('./lib/results');
 const {
   buildInviteUrl,
   createWaitingGame,
@@ -26,7 +35,7 @@ const {
   resolvePublicBaseUrl,
   submitGameAnswer,
 } = require('./lib/rooms');
-const { getGameRoom, getUserProfile, listTopicPacks, saveUserProfile } = require('./db');
+const { getGameRoom, getGameRoomSecrets, getUserProfile, listTopicPacks, saveUserProfile } = require('./db');
 const {
   assertAuthProviderEnabled,
   attachSession,
@@ -38,7 +47,11 @@ const {
   identityFromIdToken,
   isRequestSecure,
   normalizeVerifiedIdentity,
+  clearJoinIntentCookie,
   parseSessionPayload,
+  readJoinIntentFromRequest,
+  resolveAuthRedirectPath,
+  signJoinIntentCookie,
   signSessionCookie,
   validateHandle,
 } = require('./auth');
@@ -122,6 +135,37 @@ function parseTopicPackIdsFromBody(body) {
   return [];
 }
 
+function joinGamePinFromQuery(req) {
+  const gamePin = typeof req.query.game === 'string'
+    ? req.query.game.trim()
+    : typeof req.query.room === 'string'
+      ? req.query.room.trim()
+      : '';
+  return isValidGamePin(gamePin) ? gamePin : null;
+}
+
+function appendSetCookie(res, headerValue) {
+  const existing = res.getHeader('Set-Cookie');
+  if (!existing) {
+    res.setHeader('Set-Cookie', headerValue);
+    return;
+  }
+  const next = Array.isArray(existing) ? [...existing, headerValue] : [existing, headerValue];
+  res.setHeader('Set-Cookie', next);
+}
+
+function consumeJoinIntentRedirect(req, res, session) {
+  const joinPin = readJoinIntentFromRequest(req);
+  if (!joinPin) {
+    return null;
+  }
+  const target = resolveAuthRedirectPath(session, joinPin);
+  if (session?.handle && target.startsWith('/join?')) {
+    appendSetCookie(res, clearJoinIntentCookie({ secure: isRequestSecure(req) }));
+  }
+  return target;
+}
+
 function lockHandle(session, rawHandle) {
   const validated = validateHandle(rawHandle);
   if (!validated) {
@@ -132,8 +176,17 @@ function lockHandle(session, rawHandle) {
   return { ok: true, handle: validated, storedHandle: handle, session: nextSession };
 }
 
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
+  const joinFromQuery = joinGamePinFromQuery(req);
+  if (joinFromQuery && !req.session?.uid) {
+    appendSetCookie(res, signJoinIntentCookie(joinFromQuery, { secure: isRequestSecure(req) }));
+  }
   if (req.session?.uid) {
+    const joinTarget = consumeJoinIntentRedirect(req, res, req.session);
+    if (joinTarget) {
+      res.redirect(302, joinTarget);
+      return;
+    }
     if (req.session.handle) {
       res.redirect(302, '/dashboard');
       return;
@@ -151,7 +204,8 @@ app.get('/', (req, res) => {
 
 app.get('/onboarding/handle', requireSession, (req, res) => {
   if (req.session.handle) {
-    res.redirect(302, '/dashboard');
+    const joinTarget = consumeJoinIntentRedirect(req, res, req.session);
+    res.redirect(302, joinTarget || '/dashboard');
     return;
   }
   res
@@ -185,7 +239,8 @@ app.post('/onboarding/handle', requireSession, async (req, res) => {
     return;
   }
   persistSession(req, res, result.session);
-  res.redirect(302, '/dashboard');
+  const joinTarget = consumeJoinIntentRedirect(req, res, result.session);
+  res.redirect(302, joinTarget || '/dashboard');
 });
 
 app.post('/api/handle', requireSession, async (req, res) => {
@@ -229,7 +284,8 @@ app.post('/api/auth/session', async (req, res) => {
       isAdmin,
     });
     persistSession(req, res, session);
-    const redirectTo = session.handle ? '/dashboard' : '/onboarding/handle';
+    const joinPin = readJoinIntentFromRequest(req);
+    const redirectTo = resolveAuthRedirectPath(session, joinPin);
     res.json({
       ok: true,
       uid: session.uid,
@@ -265,7 +321,12 @@ app.get('/dashboard', requireSessionWithHandle, async (req, res) => {
   if (!req.session.handle) {
     persistSession(req, res, viewSession);
   }
-  res.type('html').send(renderDashboardPage(viewSession));
+  const rooms = await listRecentMatchesForUser(req.session.uid, { status: 'COMPLETED' });
+  const matches = buildDashboardMatchSummaries({
+    rooms,
+    userId: req.session.uid,
+  });
+  res.type('html').send(renderDashboardPage({ session: viewSession, matches }));
 });
 
 for (const link of getFooterLinks()) {
@@ -386,6 +447,10 @@ app.get('/game/:gamePin/play', requireSessionWithHandle, async (req, res) => {
   }
   if (room.status === 'WAITING') {
     res.redirect(302, `/join?game=${gamePin}`);
+    return;
+  }
+  if (room.status === 'COMPLETED') {
+    res.redirect(302, `/rooms/${gamePin}/results`);
     return;
   }
   if (!room.players.some((player) => player.userId === req.session.uid)) {
@@ -511,16 +576,28 @@ async function handleCreateGameApi(req, res) {
 app.post('/api/games', requireSessionWithHandle, handleCreateGameApi);
 app.post('/api/rooms', requireSessionWithHandle, handleCreateGameApi);
 
-app.get('/join', requireSessionWithHandle, async (req, res) => {
-  const gamePin = typeof req.query.game === 'string'
-    ? req.query.game.trim()
-    : typeof req.query.room === 'string'
-      ? req.query.room.trim()
-      : '';
-  if (!isValidGamePin(gamePin)) {
+app.get('/join', async (req, res) => {
+  const gamePin = joinGamePinFromQuery(req);
+  if (!gamePin) {
     res.status(400).type('text/plain').send('Invalid game PIN');
     return;
   }
+  if (!req.session?.uid) {
+    appendSetCookie(res, signJoinIntentCookie(gamePin, { secure: isRequestSecure(req) }));
+    res.redirect(302, `/?join=${encodeURIComponent(gamePin)}`);
+    return;
+  }
+  let handle = req.session.handle;
+  if (!handle) {
+    handle = await resolveSessionHandle(req);
+  }
+  if (!handle) {
+    appendSetCookie(res, signJoinIntentCookie(gamePin, { secure: isRequestSecure(req) }));
+    res.redirect(302, '/onboarding/handle');
+    return;
+  }
+  req.resolvedHandle = handle;
+  appendSetCookie(res, clearJoinIntentCookie({ secure: isRequestSecure(req) }));
   const existingRoom = await getGameRoom(gamePin);
   if (!existingRoom) {
     res.status(404).type('html').send(
@@ -596,6 +673,135 @@ async function handleGetPublicGameApi(req, res) {
 
 app.get('/api/games/:gamePin', handleGetPublicGameApi);
 app.get('/api/rooms/:pin', handleGetPublicGameApi);
+
+async function handleBreakdownApi(req, res) {
+  const gamePin = req.params.gamePin || req.params.pin;
+  if (!isValidGamePin(gamePin)) {
+    res.status(400).json({ error: 'invalid game pin' });
+    return;
+  }
+  if (!req.session?.uid) {
+    res.status(401).json({ error: 'unauthorized' });
+    return;
+  }
+  const bundle = await loadResultsBundle(gamePin);
+  if (!bundle) {
+    res.status(404).json({ error: 'game not found' });
+    return;
+  }
+  const { room, secrets } = bundle;
+  if (room.status !== 'COMPLETED') {
+    const message = getStaticCopy().breakdown.incomplete_message;
+    res.status(409).json({ error: 'game_not_complete', message });
+    return;
+  }
+  if (!room.players.some((player) => player.userId === req.session.uid)) {
+    res.status(403).json({ error: 'forbidden' });
+    return;
+  }
+  const subjectUserId = typeof req.query.user === 'string' && req.query.user.trim()
+    ? req.query.user.trim()
+    : req.session.uid;
+  if (!room.players.some((player) => player.userId === subjectUserId)) {
+    res.status(400).json({ error: 'invalid user' });
+    return;
+  }
+  const page = parseBreakdownPage(
+    typeof req.query.page === 'string' ? req.query.page : undefined,
+  );
+  const leaderboardPage = parseBreakdownPage(
+    typeof req.query.lbPage === 'string' ? req.query.lbPage : undefined,
+  );
+  const breakdown = buildMatchBreakdown({
+    room,
+    secrets,
+    userId: subjectUserId,
+    page,
+    leaderboardPage,
+  });
+  res.json(breakdown);
+}
+
+app.get('/api/games/:gamePin/breakdown', requireSessionApi, handleBreakdownApi);
+app.get('/api/rooms/:pin/breakdown', requireSessionApi, handleBreakdownApi);
+
+async function handleResultsPage(req, res) {
+  const gamePin = req.params.pin;
+  if (!isValidGamePin(gamePin)) {
+    res.status(404).type('text/plain').send('Not Found');
+    return;
+  }
+  const bundle = await loadResultsBundle(gamePin);
+  if (!bundle || bundle.room.status !== 'COMPLETED') {
+    res.status(404).type('text/plain').send('Not Found');
+    return;
+  }
+  if (!bundle.room.players.some((player) => player.userId === req.session.uid)) {
+    res.status(403).type('text/plain').send('Forbidden');
+    return;
+  }
+  res.type('html').send(
+    renderResultsPage({
+      session: { ...req.session, handle: req.resolvedHandle },
+      room: bundle.room,
+      secrets: bundle.secrets,
+    }),
+  );
+}
+
+app.get('/rooms/:pin/results', requireSessionWithHandle, handleResultsPage);
+
+async function handleBreakdownPage(req, res) {
+  const gamePin = req.params.pin;
+  if (!isValidGamePin(gamePin)) {
+    res.status(404).type('text/plain').send('Not Found');
+    return;
+  }
+  const bundle = await loadResultsBundle(gamePin);
+  if (!bundle) {
+    res.status(404).type('text/plain').send('Not Found');
+    return;
+  }
+  if (bundle.room.status !== 'COMPLETED') {
+    const message = getStaticCopy().breakdown.incomplete_message;
+    res.status(403).type('text/plain').send(message);
+    return;
+  }
+  if (!bundle.room.players.some((player) => player.userId === req.session.uid)) {
+    res.status(403).type('text/plain').send('Forbidden');
+    return;
+  }
+  const subjectUserId = typeof req.query.user === 'string' && req.query.user.trim()
+    ? req.query.user.trim()
+    : req.session.uid;
+  if (!bundle.room.players.some((player) => player.userId === subjectUserId)) {
+    res.status(400).type('text/plain').send('Invalid user');
+    return;
+  }
+  const page = parseBreakdownPage(
+    typeof req.query.page === 'string' ? req.query.page : undefined,
+  );
+  const leaderboardPage = parseBreakdownPage(
+    typeof req.query.lbPage === 'string' ? req.query.lbPage : undefined,
+  );
+  const breakdown = buildMatchBreakdown({
+    room: bundle.room,
+    secrets: bundle.secrets,
+    userId: subjectUserId,
+    page,
+    leaderboardPage,
+  });
+  res.type('html').send(
+    renderBreakdownPage({
+      session: { ...req.session, handle: req.resolvedHandle },
+      room: bundle.room,
+      breakdown,
+      subjectUserId,
+    }),
+  );
+}
+
+app.get('/rooms/:pin/breakdown', requireSessionWithHandle, handleBreakdownPage);
 
 app.get('/api/topic-packs', (req, res) => {
   let limit;

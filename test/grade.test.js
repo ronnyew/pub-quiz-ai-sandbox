@@ -37,7 +37,7 @@ test('gradeAnswer scores zero when correct but after closesAt', () => {
   assert.equal(result.latencyMs, receivedAt - openedAt);
 });
 
-test('gradeAnswer scores zero for wrong answers inside the window', () => {
+test('gradeAnswer deducts basePoints for wrong answers inside the window', () => {
   const openedAt = 3_000_000;
   const closesAt = openedAt + 30_000;
   const result = gradeAnswer({
@@ -45,6 +45,21 @@ test('gradeAnswer scores zero for wrong answers inside the window', () => {
     selectedAnswerId: 'D',
     basePoints: 100,
     receivedAt: openedAt + 1_000,
+    openedAt,
+    closesAt,
+  });
+  assert.equal(result.isCorrect, false);
+  assert.equal(result.pointsAwarded, -100);
+});
+
+test('gradeAnswer scores zero for wrong answers after closesAt', () => {
+  const openedAt = 4_000_000;
+  const closesAt = openedAt + 30_000;
+  const result = gradeAnswer({
+    correctAnswerId: 'A',
+    selectedAnswerId: 'B',
+    basePoints: 50,
+    receivedAt: closesAt + 1,
     openedAt,
     closesAt,
   });

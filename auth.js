@@ -1,6 +1,9 @@
 const crypto = require('node:crypto');
 
 const SESSION_COOKIE = 'pq_session';
+const JOIN_INTENT_COOKIE = 'pq_join_intent';
+const JOIN_INTENT_MAX_AGE_SEC = 900;
+const GAME_PIN_RE = /^\d{6}$/;
 const HANDLE_REGEX = /^[A-Za-z0-9]{3,18}$/;
 
 const SESSION_AUTH_PROVIDERS = new Set([
@@ -367,6 +370,72 @@ function clearSessionCookie({ secure = false } = {}) {
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureFlag}`;
 }
 
+function assertJoinGamePin(gamePin) {
+  if (typeof gamePin !== 'string' || !GAME_PIN_RE.test(gamePin)) {
+    throw new TypeError('invalid join game pin');
+  }
+  return gamePin;
+}
+
+function signJoinIntentPayload(gamePin) {
+  const pin = assertJoinGamePin(gamePin);
+  const secret = resolveSessionSecret();
+  const body = Buffer.from(JSON.stringify({ pin, exp: Date.now() + JOIN_INTENT_MAX_AGE_SEC * 1000 })).toString('base64url');
+  const sig = crypto.createHmac('sha256', secret).update(body).digest('base64url');
+  return `${body}.${sig}`;
+}
+
+function parseJoinIntentPayload(token) {
+  if (typeof token !== 'string' || !token.includes('.')) {
+    return null;
+  }
+  const [body, sig] = token.split('.');
+  const secret = resolveSessionSecret();
+  const expected = crypto.createHmac('sha256', secret).update(body).digest('base64url');
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (!payload || typeof payload.pin !== 'string' || !GAME_PIN_RE.test(payload.pin)) {
+      return null;
+    }
+    if (!Number.isFinite(payload.exp) || payload.exp < Date.now()) {
+      return null;
+    }
+    return payload.pin;
+  } catch {
+    return null;
+  }
+}
+
+function signJoinIntentCookie(gamePin, { forHeader = true, secure = false } = {}) {
+  const token = signJoinIntentPayload(gamePin);
+  const secureFlag = secure ? '; Secure' : '';
+  const header = `${JOIN_INTENT_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${JOIN_INTENT_MAX_AGE_SEC}${secureFlag}`;
+  return forHeader ? header : `${JOIN_INTENT_COOKIE}=${token}`;
+}
+
+function readJoinIntentFromRequest(req) {
+  const token = parseCookieHeader(req.headers?.cookie, JOIN_INTENT_COOKIE);
+  return parseJoinIntentPayload(token);
+}
+
+function clearJoinIntentCookie({ secure = false } = {}) {
+  const secureFlag = secure ? '; Secure' : '';
+  return `${JOIN_INTENT_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureFlag}`;
+}
+
+function resolveAuthRedirectPath(session, joinPin) {
+  const hasHandle = Boolean(session?.handle);
+  if (joinPin) {
+    return hasHandle ? `/join?game=${joinPin}` : '/onboarding/handle';
+  }
+  return hasHandle ? '/dashboard' : '/onboarding/handle';
+}
+
 function escapeHandleForHtml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -381,7 +450,9 @@ module.exports = {
   assertAllowedAuthProvider,
   assertSessionHasNoPii,
   attachSession,
+  clearJoinIntentCookie,
   clearSessionCookie,
+  JOIN_INTENT_COOKIE,
   createPlayerSession,
   escapeHandleForHtml,
   getAdminPolicy,
@@ -395,11 +466,16 @@ module.exports = {
   isAuthProviderEnabled,
   isRequestSecure,
   normalizeVerifiedIdentity,
+  parseJoinIntentPayload,
   parseSessionPayload,
+  readJoinIntentFromRequest,
   readSessionFromRequest,
+  resolveAuthRedirectPath,
   rejectForbiddenSignInProvider,
   resolveProviderFromFirebaseUser,
   resolveSessionSecret,
+  signJoinIntentCookie,
+  signJoinIntentPayload,
   signSessionCookie,
   validateHandle,
 };

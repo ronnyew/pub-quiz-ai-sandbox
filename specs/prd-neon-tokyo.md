@@ -75,14 +75,16 @@
 - **FR-09 (Answer Selection):**
   - 4 high-contrast multi-choice targets (`A`, `B`, `C`, `D`).
   - Tactile selection states with neon pink locked-in borders and badges.
+- **Scoring (per question):** Correct on-time answers **add** `basePoints` to the player total. Incorrect on-time answers **subtract** `basePoints`. Unanswered questions and submissions after `closesAt` award **0** (no change to the total).
 
 ### 3.5 Results, Leaderboards & Telemetry
 - **FR-10 (Game Over & Podium):**
-  - Highlighted #1 Champion card with victory telemetry (+450 XP, Personal Best).
-  - Arcade leaderboard ranked descending by score, displaying correct question counts, average response delta, and critical streaks.
+  - Highlighted #1 Champion card with correct count and average response speed on the row (no XP or streak labels on the podium).
+  - Arcade leaderboard ranked descending by score, displaying correct question counts and average response delta.
+  - The signed-in player’s leaderboard row links to the match breakdown for that room (`GET /rooms/:pin/breakdown?user=`).
   - Primary navigation button: `RETURN HOME →`.
 - **FR-11 (Match Breakdown Modal / Drawer):**
-  - Accessible via match rows in the lobby dashboard or match recap.
+  - Accessible via dashboard match rows, the signed-in player’s game-over leaderboard row, or the standalone breakdown URL.
   - Top-level metric cards: Total Score (e.g. 50/50), Accuracy (100%), Average Speed (1.8s), Rank (#1 of 18).
   - Question-by-question response log showing player's answer vs verified answer and speed of response.
   - Pagination for matches containing more than 5–10 rounds.

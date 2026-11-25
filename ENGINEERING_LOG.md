@@ -227,3 +227,81 @@
 1. **What changed.** Timer ring only changes stroke/glow (`#00ffcc` → `#9d4edd` at ≤10s → `#ff2d78` at ≤5s); numeric countdown and “s” suffix stay white/cyan. Removed `+N PTS` above the timer. Question badge matches Stitch: `self-start` pink pill, `text-xs` hotel_class icon.
 2. **Why.** Product feedback to align with `design/player/gameplay/code.html` without distracting digit color shifts.
 3. **Security and cost.** Presentation-only.
+
+## 2026-11-26 — Dashboard match modal Stitch layout
+
+1. **What changed.** Dashboard breakdown modal matches `dashboard_with_match_modal` two-column layout: green border, cyan top-left + pink top-right/bottom-left corner accents, green total score and red rank telemetry, questions column with cyan pager, leaderboard column (10 per page) with pink pager and YOU badge. Metrics refresh from breakdown API; CMS strings for leaderboard chrome.
+2. **Why.** FR-11 drawer parity with Stitch export and parity with standalone breakdown styling.
+3. **Security and cost.** Client fetches existing membership-gated breakdown JSON on row open only.
+
+## 2026-11-26 — Match breakdown response log styling and pager
+
+1. **What changed.** Breakdown rows use green correct / red incorrect answer treatment, hide verified text when correct, and show time without a SPEED label. Metric totals use green (`total score`, question numbers, positive PTS) and red rank. Pagination reuses `.pq-pager-btn` chevron + numbered pages on `GET /rooms/:pin/breakdown`; dashboard modal log matches the same row rules and numbered pager buttons.
+2. **Why.** Align the standalone breakdown with Neon Tokyo pagination and make scan-at-a-glance outcomes obvious.
+3. **Security and cost.** Presentation-only.
+
+## 2026-11-26 — Penalty scoring for wrong answers
+
+1. **What changed.** `gradeAnswer` adds `basePoints` for correct on-time answers, subtracts `basePoints` for wrong on-time answers, and awards 0 for late or unanswered questions. `db.js` validation allows negative `pointsAwarded` and room `scores`. Breakdown UI shows signed point deltas (`+10` / `-10`). Tests and Slice 5 roadmap done-check updated.
+2. **Why.** Product rule: incorrect picks cost points; skips and late locks do not.
+3. **Security and cost.** Server-side grading unchanged; cumulative scores may go negative and are stored as integers.
+
+## 2026-11-26 — Game-over podium row links to breakdown
+
+1. **What changed.** The signed-in player’s row on `GET /rooms/:pin/results` is a link to `/rooms/:pin/breakdown?user=`. Podium rows no longer show Best Streak or match XP labels (correct count and avg speed remain). Specs (`roadmap`, `prd`, `CLAUDE.md`) and `test/results.test.js` updated.
+2. **Why.** Players open per-question telemetry from the game-over screen without extra chrome; streak/XP stay available in breakdown API metrics where needed.
+3. **Security and cost.** Same membership-gated breakdown route; presentation-only change on the podium.
+
+## 2026-11-26 — Join invite auth redirect (one-shot intent cookie)
+
+1. **What changed.** Unsigned visitors to `GET /join?game=` get a signed HttpOnly `pq_join_intent` cookie and redirect to `/?join=<pin>`. After `POST /api/auth/session`, `redirectTo` targets `/join?game=` (returning users) or `/onboarding/handle` (new users). Handle submit and authenticated `/join` consume the cookie once and complete the join; later visits route to dashboard as before.
+2. **Why.** Invite links must survive login/onboarding without persisting a permanent “always join” redirect.
+3. **Security and cost.** HMAC-signed pin + 15-minute TTL; no extra polling; cookie cleared after successful join.
+
+## 2026-11-26 — Slice 6 evaluator: breakdown lock, cached summaries, bounded history queries
+
+1. **What changed.** Breakdown API/page return 409/403 until `COMPLETED`; `buildMatchBreakdown` strips grading fields when incomplete. `playerIds` derived on every room write; `playerSummaries` computed at game end in `advanceGameQuestion`. `listGameRoomsForUser` defaults to `status: 'COMPLETED'` with Firestore `array-contains` + `.limit()` query. Dashboard history reads cached summaries only (no N+1 `game_room_secrets`). CMS-driven modal copy and `results.game_pin_label` → GAME PIN; CLAUDE.md persistence guardrails added.
+2. **Why.** Close evaluator CRITICAL/WARNING findings: no early answer leaks, no dashboard secret fan-out, production-scalable match history.
+3. **Security and cost.** Fewer secret reads on `/dashboard`; indexed bounded Firestore queries; breakdown still on-demand per match.
+
+## 2026-11-26 — Breakdown page centered Return home CTA
+
+1. **What changed.** Match breakdown footer link uses `breakdown.return_home_label` from CMS (“Return home”), centered layout, and `pq-dashboard-start-cta` primary styling; removed unused `close_label`.
+2. **Why.** Align exit action with Neon Tokyo primary buttons and editable copy.
+3. **Security and cost.** Presentation-only.
+
+## 2026-11-26 — Remove modal “Open full recap” link
+
+1. **What changed.** Dropped `OPEN FULL RECAP` anchor and `modal-full-breakdown` wiring from dashboard match modal; full breakdown remains on `GET /rooms/:pin/breakdown` via history/outcomes flows.
+2. **Why.** Product choice to keep telemetry inside the overlay only.
+3. **Security and cost.** None.
+
+## 2026-11-26 — Match modal green border and corner accents
+
+1. **What changed.** `pq-match-modal` in `neon-tokyo.css` sets explicit cyan border and glow; four `pq-match-modal-corner--*` brackets (TL/BR cyan, TR/BL pink) replace Tailwind `border-secondary` / `border-primary` on the dashboard breakdown overlay.
+2. **Why.** Stitch `dashboard_with_match_modal` chrome was invisible when Tailwind browser codegen skipped theme color utilities on modal markup.
+3. **Security and cost.** CSS-only; no runtime change.
+
+## 2026-11-26 — Leaderboard YOU row CSS (modal + recap)
+
+1. **What changed.** Added `pq-leaderboard-row--you` and tier classes in `neon-tokyo.css` so current-player rows get pink fill, border, rank, and PTS without relying on Tailwind `primary/*` utilities (modal rows are JS-built and were missing CDN-scanned styles).
+2. **Why.** Match Stitch `dashboard_with_match_modal` red accent for the signed-in row on dashboard modal and full breakdown.
+3. **Security and cost.** Presentation-only; no API or polling change.
+
+## 2026-11-26 — Breakdown two-column leaderboard and modal Stitch colors
+
+1. **What changed.** Dashboard modal uses explicit green game PIN (`#00ffcc`), green questions icon, red leaderboard icon, and red YOU row highlight at any rank. Full recap (`GET /rooms/:pin/breakdown`) mirrors modal two-column layout with paginated leaderboard (`lbPage`, 10 per page) alongside question log pagination; `buildMatchBreakdown` exposes `leaderboardEntries` slice.
+2. **Why.** FR-11 parity with `dashboard_with_match_modal` and visible self-row without requiring first place.
+3. **Security and cost.** Same membership-gated routes; SSR pagination only—no extra polling.
+
+## 2026-11-26 — Host auto-advance delay when all answered
+
+1. **What changed.** Gameplay `data-advance-delay-ms` reduced from 3000 to 500 so the host client schedules `POST …/advance` half a second after `allPlayersAnswered` (timer-expired advance unchanged).
+2. **Why.** Faster pace between questions when everyone has locked in early.
+3. **Security and cost.** Client-only timing; host must still call advance; no new polling.
+
+## 2026-11-26 — Slice 6 podium, dashboard history, and match breakdown
+
+1. **What changed.** Added `lib/results.js` for leaderboard ranking (score, then avg latency, then `userId`), per-player telemetry (XP, streak, accuracy), and paginated breakdown rows (5 per page). `GET /rooms/:pin/results` renders FR-10 game-over podium; `GET /rooms/:pin/breakdown` and `GET /api/games/:pin/breakdown` expose metrics and response logs with verified answers only when `status === COMPLETED`. Dashboard loads real match history via `listGameRoomsForUser` and opens the Tailwind breakdown overlay with API pagination. Gameplay redirects to results when complete.
+2. **Why.** Slice 6 completes post-game telemetry and replaces the dashboard demo row with stored matches while keeping answer keys in `game_room_secrets` until the room finishes.
+3. **Security and cost.** Breakdown APIs require room membership; `correctAnswerId`, `explanation`, and `sourceCitations` are omitted for non-`COMPLETED` rooms. No background jobs or new polling—dashboard modal fetches on demand.

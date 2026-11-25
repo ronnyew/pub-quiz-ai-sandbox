@@ -433,7 +433,7 @@ function sanitizeScores(scores) {
     if (typeof userId !== 'string' || userId.trim() === '') {
       throw new TypeError('invalid score userId');
     }
-    if (!Number.isInteger(value) || value < 0) {
+    if (!Number.isInteger(value)) {
       throw new TypeError('invalid score value');
     }
     next[userId] = value;
@@ -475,6 +475,44 @@ function validateGameRoom(room) {
   }
   if (typeof room.createdAt !== 'string' || room.createdAt.trim() === '') {
     throw new TypeError('invalid createdAt');
+  }
+  if (room.playerIds !== undefined) {
+    if (!Array.isArray(room.playerIds) || room.playerIds.length < 1) {
+      throw new TypeError('invalid playerIds');
+    }
+    for (const uid of room.playerIds) {
+      if (typeof uid !== 'string' || uid.trim() === '') {
+        throw new TypeError('invalid playerIds entry');
+      }
+    }
+  }
+  if (room.playerSummaries !== undefined) {
+    if (!room.playerSummaries || typeof room.playerSummaries !== 'object' || Array.isArray(room.playerSummaries)) {
+      throw new TypeError('invalid playerSummaries');
+    }
+    for (const [uid, summary] of Object.entries(room.playerSummaries)) {
+      if (typeof uid !== 'string' || uid.trim() === '') {
+        throw new TypeError('invalid playerSummaries key');
+      }
+      if (!summary || typeof summary !== 'object') {
+        throw new TypeError('invalid playerSummaries entry');
+      }
+      if (!Number.isInteger(summary.score) || !Number.isInteger(summary.rank) || summary.rank < 1) {
+        throw new TypeError('invalid playerSummaries rank/score');
+      }
+      if (
+        !Number.isInteger(summary.correctCount)
+        || !Number.isInteger(summary.totalQuestions)
+        || !Number.isInteger(summary.accuracyPercent)
+        || !Number.isInteger(summary.maxScore)
+      ) {
+        throw new TypeError('invalid playerSummaries metrics');
+      }
+      if (summary.avgSpeedSeconds !== null && summary.avgSpeedSeconds !== undefined
+        && typeof summary.avgSpeedSeconds !== 'number') {
+        throw new TypeError('invalid playerSummaries avgSpeedSeconds');
+      }
+    }
   }
   if (room.status === 'ACTIVE' || room.status === 'COMPLETED') {
     if (!Array.isArray(room.dealQuestions) || room.dealQuestions.length !== room.questionCount) {
@@ -558,7 +596,7 @@ function validatePlayerResponse(response) {
   if (!Number.isInteger(response.latencyMs) || response.latencyMs < 0) {
     throw new TypeError('invalid latencyMs');
   }
-  if (!Number.isInteger(response.pointsAwarded) || response.pointsAwarded < 0) {
+  if (!Number.isInteger(response.pointsAwarded)) {
     throw new TypeError('invalid pointsAwarded');
   }
   if (!Number.isFinite(response.timestamp)) {
@@ -593,6 +631,8 @@ function sanitizeGameRoomForStorage(room) {
       const { userId, handle } = player;
       return { userId, handle };
     });
+    const derivedIds = [...new Set(clone.players.map((player) => player.userId))].sort();
+    clone.playerIds = derivedIds;
   }
   return clone;
 }
@@ -990,6 +1030,46 @@ function resetGameRoomSecretsForTest() {
   memory.gameRoomSecrets.clear();
 }
 
+async function listGameRoomsForUser(userId, { limit = 50, status = 'COMPLETED' } = {}) {
+  if (typeof userId !== 'string' || userId.trim() === '') {
+    throw new TypeError('invalid userId');
+  }
+  if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
+    throw new RangeError('limit out of range');
+  }
+  const effectiveStatus = status === undefined || status === null ? 'COMPLETED' : status;
+  if (effectiveStatus !== 'COMPLETED' && effectiveStatus !== 'ALL') {
+    throw new TypeError('invalid status filter');
+  }
+  if (gameRoomsUseFirestore()) {
+    let query = gameRoomsCollection().where('playerIds', 'array-contains', userId);
+    if (effectiveStatus !== 'ALL') {
+      query = query.where('status', '==', effectiveStatus);
+    }
+    const snapshot = await query.orderBy('createdAt', 'desc').limit(limit).get();
+    const matches = [];
+    for (const doc of snapshot.docs) {
+      try {
+        matches.push(sanitizeGameRoomForStorage({ ...doc.data(), roomId: doc.id }));
+      } catch {
+        /* skip invalid persisted room */
+      }
+    }
+    return matches;
+  }
+  ensureGameRoomsHydrated();
+  const matches = [];
+  for (const room of memory.gameRooms.values()) {
+    if (effectiveStatus !== 'ALL' && room.status !== effectiveStatus) continue;
+    const inRoom = room.playerIds?.includes(userId)
+      || room.players?.some((player) => player.userId === userId);
+    if (!inRoom) continue;
+    matches.push(structuredClone(room));
+  }
+  matches.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  return matches.slice(0, limit);
+}
+
 module.exports = {
   seed,
   assertPackIds,
@@ -1009,7 +1089,9 @@ module.exports = {
   updateGameRoomSecrets,
   runGameRoomBundleTransaction,
   runGameRoomLaunchTransaction,
+  listGameRoomsForUser,
   setFirestoreClientForTest,
   setGameRoomPersistenceForTest,
+  resetGameRoomTestHooks,
   shouldUseFirestore,
 };

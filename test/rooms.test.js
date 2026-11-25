@@ -183,11 +183,18 @@ test('dashboard CREATE NEW GAME submits POST /game and includes match modal shel
   assert.match(html, /pq-dashboard-card--join/);
   assert.match(html, /pq-join-pin-input/);
   assert.match(html, /pq-dashboard-history-table/);
-  assert.match(html, /#489028/);
+  assert.match(html, /Complete a live session to populate your match history/);
   assert.match(html, /id="match-modal"/);
-  assert.match(html, /class="match-row/);
   assert.match(html, /id="modal-game-code"/);
+  assert.match(html, /text-\[#00ffcc\][^"]*" id="modal-game-code"/);
   assert.match(html, /id="modal-rounds"/);
+  assert.match(html, /id="modal-leaderboard-list"/);
+  assert.match(html, /id="modal-leaderboard-pager"/);
+  assert.match(html, /pq-match-modal/);
+  assert.match(html, /pq-match-modal-corner--tl/);
+  assert.match(html, /pq-match-modal-corner--tr/);
+  assert.match(html, /pq-match-modal-corner--bl/);
+  assert.match(html, /pq-match-modal-corner--br/);
   assert.match(html, /dashboard-match-modal\.js/);
 });
 

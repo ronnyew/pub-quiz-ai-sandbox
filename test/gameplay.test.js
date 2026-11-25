@@ -172,6 +172,24 @@ test('submitAnswer scores basePoints on time, rejects duplicate, late answer sco
   assert.equal(late.pointsAwarded, 0);
 });
 
+test('submitAnswer deducts basePoints for wrong on-time answers', async () => {
+  const { gamePin } = await setupActiveGame();
+  const secrets = await db.getGameRoomSecrets(gamePin);
+  const secretQ = secrets.secretQuestions[secrets.currentQuestionIndex];
+  const wrongId = secretQ.correctAnswerId === 'A' ? 'B' : 'A';
+  await submitGameAnswer({
+    gamePin,
+    userId: 'player-gp',
+    selectedAnswerId: wrongId,
+    now: secrets.openedAt + 1_000,
+  });
+  const room = await db.getGameRoom(gamePin);
+  assert.equal(room.scores['player-gp'], -secretQ.basePoints);
+  const updated = await db.getGameRoomSecrets(gamePin);
+  const resp = updated.responses.find((entry) => entry.userId === 'player-gp');
+  assert.equal(resp.pointsAwarded, -secretQ.basePoints);
+});
+
 test('latencyMs in stored response matches grade timestamps not client body', async () => {
   const { gamePin } = await setupActiveGame();
   const secrets = await db.getGameRoomSecrets(gamePin);
