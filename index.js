@@ -5,9 +5,21 @@ const {
   renderDashboardPage,
   renderGatewayPage,
   renderHandlePage,
+  renderHostLobbyPage,
   renderStaticContentPage,
+  renderWaitingRoomPage,
 } = require('./lib/player-pages');
-const { getUserProfile, listTopicPacks, saveUserProfile } = require('./db');
+const {
+  buildInviteUrl,
+  createWaitingGame,
+  filterAndPageTopicPacks,
+  getPublicGame,
+  isValidGamePin,
+  joinWaitingGame,
+  resolvePublicBaseUrl,
+  saveLobbyPackSelection,
+} = require('./lib/rooms');
+const { getGameRoom, getUserProfile, listTopicPacks, saveUserProfile } = require('./db');
 const {
   assertAuthProviderEnabled,
   attachSession,
@@ -40,11 +52,59 @@ function requireSession(req, res, next) {
   next();
 }
 
+function requireSessionWithHandle(req, res, next) {
+  if (!req.session?.uid) {
+    res.redirect(302, '/');
+    return;
+  }
+  resolveSessionHandle(req)
+    .then((handle) => {
+      if (!handle) {
+        res.redirect(302, '/onboarding/handle');
+        return;
+      }
+      req.resolvedHandle = handle;
+      next();
+    })
+    .catch(next);
+}
+
 function persistSession(req, res, session) {
   res.setHeader(
     'Set-Cookie',
     signSessionCookie(session, { forHeader: true, secure: isRequestSecure(req) }),
   );
+}
+
+async function resolveSessionHandle(req) {
+  if (req.session?.handle) {
+    return req.session.handle;
+  }
+  if (!req.session?.uid) {
+    return null;
+  }
+  const profile = await getUserProfile(req.session.uid);
+  return profile?.handle || null;
+}
+
+function parsePositivePage(raw) {
+  if (raw === undefined) return 1;
+  if (typeof raw !== 'string' || !/^[1-9]\d*$/.test(raw)) {
+    return 1;
+  }
+  return Number(raw);
+}
+
+function parseTopicPackIdsFromBody(body) {
+  const raw = body?.topicPackIds;
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.filter((entry) => typeof entry === 'string');
+  }
+  if (typeof raw === 'string') {
+    return [raw];
+  }
+  return [];
 }
 
 function lockHandle(session, rawHandle) {
@@ -182,19 +242,11 @@ app.post('/api/auth/signout', (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/dashboard', requireSession, async (req, res) => {
-  let handle = req.session.handle;
-  if (!handle) {
-    const profile = await getUserProfile(req.session.uid);
-    handle = profile?.handle || null;
-  }
-  if (!handle) {
-    res.redirect(302, '/onboarding/handle');
-    return;
-  }
+app.get('/dashboard', requireSessionWithHandle, async (req, res) => {
+  const handle = req.resolvedHandle;
   const viewSession = req.session.handle
     ? req.session
-    : { ...req.session, handle };
+  : { ...req.session, handle };
   if (!req.session.handle) {
     persistSession(req, res, viewSession);
   }
@@ -215,6 +267,146 @@ for (const link of getFooterLinks()) {
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: '0.1.0' });
+});
+
+async function renderGameLobby(req, res, gamePin, { saved = false, error = null } = {}) {
+  const room = await getGameRoom(gamePin);
+  if (!room || room.hostUserId !== req.session.uid) {
+    res.status(404).type('text/plain').send('Not Found');
+    return;
+  }
+  const handle = req.resolvedHandle;
+  const allPacks = listTopicPacks({ limit: 24 });
+  const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+  const page = parsePositivePage(req.query.page);
+  const paged = filterAndPageTopicPacks(allPacks, { search, page });
+  const copy = require('./lib/content-store').getStaticCopy().host_lobby;
+  const packView = {
+    ...paged,
+    search,
+    selectedIds: room.topicPackIds || [],
+  };
+  const baseUrl = resolvePublicBaseUrl(req);
+  res.type('html').send(
+    renderHostLobbyPage({
+      session: { ...req.session, handle },
+      room,
+      packView,
+      inviteUrl: buildInviteUrl(gamePin, baseUrl),
+      message: saved && !error ? copy.launch_saved_message : null,
+      error,
+    }),
+  );
+}
+
+app.get('/game', requireSessionWithHandle, async (req, res) => {
+  try {
+    const room = await createWaitingGame({
+      hostUserId: req.session.uid,
+      hostHandle: req.resolvedHandle,
+    });
+    res.redirect(302, `/game/${room.roomId}`);
+  } catch {
+    res.status(500).type('text/plain').send('Failed to create game');
+  }
+});
+
+app.get('/game/:gamePin', requireSessionWithHandle, async (req, res) => {
+  const gamePin = req.params.gamePin;
+  if (!isValidGamePin(gamePin)) {
+    res.status(404).type('text/plain').send('Not Found');
+    return;
+  }
+  await renderGameLobby(req, res, gamePin, { saved: req.query.saved === '1' });
+});
+
+app.post('/game/:gamePin/launch', requireSessionWithHandle, async (req, res) => {
+  const gamePin = req.params.gamePin;
+  if (!isValidGamePin(gamePin)) {
+    res.status(404).type('text/plain').send('Not Found');
+    return;
+  }
+  const copy = require('./lib/content-store').getStaticCopy().host_lobby;
+  const topicPackIds = parseTopicPackIdsFromBody(req.body);
+  if (topicPackIds.length < 1) {
+    await renderGameLobby(req, res, gamePin, { error: copy.launch_error_no_topics });
+    return;
+  }
+  try {
+    const result = await saveLobbyPackSelection({
+      gamePin,
+      hostUserId: req.session.uid,
+      topicPackIds,
+    });
+    if (!result.ok) {
+      const status = result.reason === 'forbidden' ? 403 : 404;
+      res.status(status).type('text/plain').send('Unable to save pack selection');
+      return;
+    }
+    res.redirect(302, `/game/${gamePin}?saved=1`);
+  } catch {
+    await renderGameLobby(req, res, gamePin, { error: copy.launch_error_invalid });
+  }
+});
+
+app.post('/api/games', requireSessionWithHandle, async (req, res) => {
+  try {
+    const room = await createWaitingGame({
+      hostUserId: req.session.uid,
+      hostHandle: req.resolvedHandle,
+    });
+    const baseUrl = resolvePublicBaseUrl(req);
+    res.status(201).json({
+      gamePin: room.roomId,
+      inviteUrl: buildInviteUrl(room.roomId, baseUrl),
+      status: room.status,
+    });
+  } catch {
+    res.status(500).json({ error: 'failed to create game' });
+  }
+});
+
+app.get('/join', requireSessionWithHandle, async (req, res) => {
+  const gamePin = typeof req.query.game === 'string'
+    ? req.query.game.trim()
+    : typeof req.query.room === 'string'
+      ? req.query.room.trim()
+      : '';
+  if (!isValidGamePin(gamePin)) {
+    res.status(400).type('text/plain').send('Invalid game PIN');
+    return;
+  }
+  const result = await joinWaitingGame({
+    gamePin,
+    userId: req.session.uid,
+    handle: req.resolvedHandle,
+  });
+  if (!result.ok) {
+    const status = result.reason === 'not_found' ? 404 : 400;
+    res.status(status).type('text/plain').send('Unable to join game');
+    return;
+  }
+  res.type('html').send(
+    renderWaitingRoomPage({
+      session: { ...req.session, handle: req.resolvedHandle },
+      room: result.room,
+      serverTimeMs: Date.now(),
+    }),
+  );
+});
+
+app.get('/api/games/:gamePin', async (req, res) => {
+  const gamePin = req.params.gamePin;
+  if (!isValidGamePin(gamePin)) {
+    res.status(400).json({ error: 'invalid game pin' });
+    return;
+  }
+  const game = await getPublicGame(gamePin);
+  if (!game) {
+    res.status(404).json({ error: 'game not found' });
+    return;
+  }
+  res.json(game);
 });
 
 app.get('/api/topic-packs', (req, res) => {

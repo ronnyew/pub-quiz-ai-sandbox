@@ -11,10 +11,13 @@ const path = require('node:path');
 const USERS_FILE = path.join(__dirname, '.data', 'users.json');
 const USER_UID = /^[A-Za-z0-9_-]{1,128}$/;
 
+const ROOM_ID = /^\d{6}$/;
+
 const memory = {
   topicPacks: new Map(),
   questions: new Map(),
   users: new Map(),
+  gameRooms: new Map(),
 };
 
 let usersHydratedFromDisk = false;
@@ -332,11 +335,118 @@ function resetUserProfilesForTest() {
   memory.users.clear();
 }
 
+function assertRoomId(roomId) {
+  if (typeof roomId !== 'string' || !ROOM_ID.test(roomId)) {
+    throw new TypeError('invalid roomId');
+  }
+}
+
+function validateGameRoom(room) {
+  if (!room || typeof room !== 'object') throw new TypeError('invalid room');
+  assertRoomId(room.roomId);
+  if (typeof room.hostUserId !== 'string' || room.hostUserId.trim() === '') {
+    throw new TypeError('invalid hostUserId');
+  }
+  if (!['WAITING', 'ACTIVE', 'COMPLETED'].includes(room.status)) {
+    throw new TypeError('invalid room status');
+  }
+  if (typeof room.questionCount !== 'number' || !Number.isInteger(room.questionCount)) {
+    throw new TypeError('invalid questionCount');
+  }
+  if (room.timeLimitPerQuestion !== 30) {
+    throw new TypeError('timeLimitPerQuestion must be 30');
+  }
+  if (!Number.isInteger(room.currentQuestionIndex)) {
+    throw new TypeError('invalid currentQuestionIndex');
+  }
+  if (!Array.isArray(room.topicPackIds)) {
+    throw new TypeError('invalid topicPackIds');
+  }
+  if (!Array.isArray(room.players) || room.players.length < 1) {
+    throw new TypeError('invalid players');
+  }
+  for (const player of room.players) {
+    if (!player || typeof player.userId !== 'string' || player.userId.trim() === '') {
+      throw new TypeError('invalid player userId');
+    }
+    if (typeof player.handle !== 'string' || player.handle.trim() === '') {
+      throw new TypeError('invalid player handle');
+    }
+  }
+  if (typeof room.createdAt !== 'string' || room.createdAt.trim() === '') {
+    throw new TypeError('invalid createdAt');
+  }
+}
+
+function sanitizeGameRoomForStorage(room) {
+  validateGameRoom(room);
+  const clone = structuredClone(room);
+  delete clone.correctAnswerId;
+  delete clone.explanation;
+  delete clone.sourceCitations;
+  delete clone.questions;
+  delete clone.deck;
+  delete clone.secrets;
+  return clone;
+}
+
+async function createGameRoom(room) {
+  assertMemoryStore();
+  const record = sanitizeGameRoomForStorage(room);
+  if (memory.gameRooms.has(record.roomId)) {
+    throw new Error('room already exists');
+  }
+  memory.gameRooms.set(record.roomId, record);
+  return structuredClone(record);
+}
+
+async function gameRoomExists(roomId) {
+  assertMemoryStore();
+  assertRoomId(roomId);
+  return memory.gameRooms.has(roomId);
+}
+
+async function getGameRoom(roomId) {
+  assertMemoryStore();
+  assertRoomId(roomId);
+  const room = memory.gameRooms.get(roomId);
+  return room ? structuredClone(room) : null;
+}
+
+async function updateGameRoom(roomId, updater) {
+  assertMemoryStore();
+  assertRoomId(roomId);
+  const existing = memory.gameRooms.get(roomId);
+  if (!existing) {
+    throw new Error('room not found');
+  }
+  const next = typeof updater === 'function' ? updater(structuredClone(existing)) : updater;
+  const record = sanitizeGameRoomForStorage(next);
+  if (record.roomId !== roomId) {
+    throw new TypeError('roomId mismatch on update');
+  }
+  memory.gameRooms.set(roomId, record);
+  return structuredClone(record);
+}
+
+function resetGameRoomsForTest() {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('resetGameRoomsForTest is only available in test');
+  }
+  memory.gameRooms.clear();
+}
+
 module.exports = {
   seed,
+  assertPackIds,
   listTopicPacks,
   listQuestionsByPackIds,
   getUserProfile,
   saveUserProfile,
   resetUserProfilesForTest,
+  createGameRoom,
+  gameRoomExists,
+  getGameRoom,
+  updateGameRoom,
+  resetGameRoomsForTest,
 };

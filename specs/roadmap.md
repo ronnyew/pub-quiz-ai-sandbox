@@ -222,7 +222,10 @@ Stitch footers use `href="#"`. Implementation must not.
 - `POST /api/rooms` creates `WAITING` room, 6-digit PIN, retry on collision (bounded, max 5 attempts).
 - Host page: search with clear, 6 packs per page, pager text `Showing {start}–{end} of {total} Topics`, multi-select checkboxes (FR-04).
 - Invite field value `https://pubquiz.app/join?room={pin}` with a copy control (FR-05). The primary button label is `LAUNCH & START GAME NOW`. In this slice the button stores the selected pack ids and stays on the lobby; Slice 5 performs the deal and status flip to `ACTIVE`.
-- `GET /join?room=` validates the PIN, requires a handle, then adds the player and renders the waiting room (FR-06): player grid, PIN badge, headcount. Radar graphic is CSS. Ping text is a single server timestamp delta from that response, not a poller on the server.
+- `GET /join?game=` validates the Game PIN, requires a handle, then adds the player and renders the waiting room (FR-06): player grid, PIN badge, headcount. Radar graphic is CSS. Ping text is a single server timestamp delta from that response, not a poller on the server.
+- **Host lobby `PLAYER GRID` (product extension):** The host screen at `GET /game/:gamePin` includes a live **PLAYER GRID** card beneath the launch CTA in the right column. This is intentional beyond the base Stitch mock and must be preserved in later slices and `/evaluate-slice` checks.
+- **Dashboard `SIGN OUT` (product extension):** `GET /dashboard` matches `design/player/dashboard_with_match_modal/code.html` for neon hero, pink/cyan action cards, Game PIN join, and match history/modal. The hero **SIGN OUT** control (`POST /api/auth/signout`, `.pq-dashboard-signout`) is required product chrome not present in the Stitch export and must stay through Slice 6+ unless the PRD changes.
+- Game PIN and player headcount appear in the **page hero** only—not duplicated in the global top header wordmark bar (wordmark-only chrome).
 - Client script may `fetch` `GET /api/rooms/:pin` on an interval only while `document.visibilityState === 'visible'`, and must clear it on hide and page unload. Server route is a plain GET with a point read of one room.
 - Public room JSON has no secret fields.
 
@@ -237,6 +240,7 @@ Stitch footers use `href="#"`. Implementation must not.
 
 **Stitch reference.**
 
+- `design/player/dashboard_with_match_modal/code.html` and `screen.png` (signed-in dashboard, match modal)
 - `design/player/start_a_game_invite_players_retro_arcade_variant/code.html` and `screen.png` (FR-03–FR-05)
 - `design/player/waiting_room/code.html` and `screen.png` (FR-06)
 

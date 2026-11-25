@@ -137,3 +137,33 @@
 1. **What changed.** `resolveProviderFromFirebaseUser` maps Firebase `signInWithEmailLink` tokens (`sign_in_provider: password`, verified email, no `passwordHash`) to `emailLink` while raw password accounts stay forbidden. `AUTH_ENABLE_PHONE` now defaults off (opt-in via `1`/`true`). Phone tab includes CMS-sourced Google reCAPTCHA attribution links. Gateway `.pq-auth-input` fill/border tokens match Stitch homepage (`#0f0f1a` / white text).
 2. **Why.** Magic-link players were rejected as `password`; SMS must not bill until ops explicitly enable phone auth; hidden reCAPTCHA badge requires visible policy links.
 3. **Security and cost.** Unverified or password-hash accounts still fail closed with **403**; phone/SMS UI absent unless env enables it.
+
+## 2026-11-25 — Slice 4 host room creation and real-time lobby
+
+1. **What changed.** Added `lib/rooms.js` (game PIN reservation, `APP_BASE_URL`/`PUBLIC_BASE_URL` invite links as `/join?game=`, pack search/pagination, join/save lobby packs, `gamePin` public JSON), `game_rooms` storage in `db.js`, Stitch-aligned dashboard (`dashboard_with_match_modal` + `dashboard-match-modal.js`), host lobby at `GET /game/:gamePin` (no `/host` suffix), `GET /game` create-and-redirect, `POST /game/:gamePin/launch`, `GET /join?game=`, and `GET/POST /api/games`. User-facing copy uses **Game PIN** terminology. Client lobby sync polls `GET /api/games/:gamePin` only while the tab is visible.
+2. **Why.** Hosts need a WAITING lobby with configurable invite URLs for local dev and production, a dashboard entry at `/game` (not a form POST to an API), and public payloads that never leak answer keys before Slice 5 deals cards.
+3. **Security and cost.** `/dashboard` and `/game*` require session + locked handle; Firestore/path reads stay point lookups. Handles and pack titles are HTML-escaped in SSR. The Node process has no `setInterval`/`WebSocket`; browser polling clears on hide/unload.
+
+## 2026-11-25 — Slice 4 lobby visual parity & host PLAYER GRID
+
+1. **What changed.** Host/waiting views use `hideHeaderMeta` so Game PIN and player counts live only in the page hero. Host lobby matches Stitch gradients, cyan pin badges, slate card borders, topic card CSS/JS selection, launch CTA moved under invite (before PLAYER GRID), and high-contrast copy link styling. Documented host PLAYER GRID in `specs/roadmap.md` and `CLAUDE.md`.
+2. **Why.** Removes duplicate chrome, aligns Start/Play screens with retro-arcade Stitch tokens, and keeps the host-side live roster as an explicit product extension.
+3. **Security and cost.** No server changes; topic toggles remain plain form checkboxes posted on launch.
+
+## 2026-11-25 — Slice 4 host lobby Stitch class parity
+
+1. **What changed.** Host lobby panels, step badges, topic pills, pagination, and `#launch-game-btn` (`.pq-launch-btn`) now mirror `start_a_game_invite_players_retro_arcade_variant` via `neon-tokyo.css` and updated `renderHostLobbyPage` / `renderTopicPager`.
+2. **Why.** Solid pink CTA, cyan/pink panel borders with corner brackets, and arcade pager styling match the approved Stitch reference without reintroducing the gradient launch button.
+3. **Security and cost.** Presentation-only; PLAYER GRID layout unchanged under the launch CTA.
+
+## 2026-11-25 — Host launch form pack sync & lobby errors
+
+1. **What changed.** Renamed launch form to `#launch-game-form` with detached submit via `form="launch-game-form"`, off-page hidden `topicPackIds`, and `host-topic-cards.js` syncing all selections into `#pq-launch-pack-hidden`. `POST /game/:gamePin/launch` re-renders the lobby with `role="alert"` Neon Tokyo banner on empty/invalid packs instead of plain text. Exported `assertPackIds` from `db.js` (was missing from `module.exports`, causing save to throw). Dashboard handle uses `.pq-dashboard-handle` pink glow; global interactive `cursor: pointer` rules in `neon-tokyo.css`.
+2. **Why.** External launch button lost pack IDs across pagination and detachment; users saw raw `"Invalid pack selection"`. UX polish for pointer affordance and Stitch handle color.
+3. **Security and cost.** Same POST validation via `assertPackIds`; no new background work. CMS copy for error strings only.
+
+## 2026-11-25 — Slice 4 dashboard Stitch parity (`dashboard_with_match_modal`)
+
+1. **What changed.** `renderDashboardPage` / match rows now mirror Stitch pink/cyan action cards, hero accents, history table ticks, outcome chevrons, and match modal corners; `neon-tokyo.css` adds `.pq-dashboard-signout`, join pin, and table hooks; `dashboard-match-modal.js` fills `modal-rounds`. `CLAUDE.md` and Slice 4 in `specs/roadmap.md` document mandatory hero **SIGN OUT**. Tests assert SIGN OUT, `/game` CTA, and `#489028` demo code.
+2. **Why.** Dashboard was legibility-broken on the cyan join CTA and missed Stitch border/glow tokens; SIGN OUT is product auth chrome beyond the mock.
+3. **Security and cost.** No new polling or routes; sign-out remains existing session POST. Presentation and client-only modal wiring only.

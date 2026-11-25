@@ -56,11 +56,62 @@
       "profile_note": "You can update your display handle anytime in your profile settings."
     },
     "dashboard": {
-      "title": "Player Dashboard",
-      "signed_in_as": "Signed in as",
-      "handle_label": "Locked handle",
-      "lobby_placeholder": "Live rooms, history, and profile controls arrive in a later slice.",
-      "sign_out_label": "Sign Out"
+      "welcome_prefix": "WELCOME BACK,",
+      "start_game_title": "START A GAME",
+      "start_game_body": "Host a bespoke quiz session in seconds. Select curated deck packs, custom round timers, automated scoring, and blast invites directly to your friends via link or share.",
+      "start_game_cta": "CREATE NEW GAME",
+      "join_game_title": "JOIN A GAME",
+      "join_game_body": "Have a table code? Enter the 6-digit Game PIN broadcast on the pub screen or sent by your host to sync your buzzer instantly.",
+      "game_pin_input_label": "GAME PIN",
+      "game_pin_placeholder": "000000",
+      "join_game_cta": "JOIN LIVE MATCH",
+      "recent_history_title": "RECENT MATCH HISTORY",
+      "table_game_code": "GAME CODE",
+      "history_empty_note": "Complete a live session to populate your match history.",
+      "history_pager_label": "SHOWING 0 OF 0 RECORDED SESSIONS",
+      "sign_out_label": "Sign Out",
+      "demo_matches": [
+        {
+          "game_code": "489028",
+          "categories": "Pop Culture, Craft Beer, Video Game Lore",
+          "date_label": "NOV 24, 2024",
+          "score_label": "—",
+          "outcome": "HOSTED (WAITING)",
+          "outcome_type": "hosted",
+          "accuracy": "—",
+          "speed": "—",
+          "rank": "—",
+          "rounds": "0/10"
+        }
+      ]
+    },
+    "host_lobby": {
+      "title_line_before": "START A",
+      "title_line_accent": "GAME",
+      "game_pin_label": "GAME PIN RESERVATION",
+      "players_waiting_label": "PLAYERS WAITING",
+      "select_topics_title": "SELECT TOPICS",
+      "select_topics_badge": "MANDATORY",
+      "search_placeholder": "SEARCH THEMES OR CATEGORIES (E.G. GAMING, TECH, MUSIC)...",
+      "invite_label": "DIRECT GAME DISPATCH URL",
+      "copy_button_label": "COPY LINK",
+      "copy_done_label": "COPIED!",
+      "launch_button_label": "LAUNCH & START GAME NOW",
+      "no_results_label": "NO THEMES MATCHING YOUR QUERY",
+      "clear_search_label": "CLEAR",
+      "launch_saved_message": "Pack selection saved for launch.",
+      "launch_error_no_topics": "Select at least one topic pack before launching.",
+      "launch_error_invalid": "We could not save that pack selection. Check your topics and try again."
+    },
+    "waiting_room": {
+      "title_line_before": "PLAY A",
+      "title_line_accent": "GAME",
+      "game_pin_label": "GAME PIN RESERVATION",
+      "headline": "Waiting for host to begin game",
+      "body_template": "You are registered and connected to game # {pin}. Questions and timers will launch automatically as soon as the host starts the session.",
+      "player_grid_label": "PLAYER GRID",
+      "sync_ping_label": "SYNC PING",
+      "ping_template": "{ms}ms since last server response"
     },
     "footer": {
       "status_text": "© 2024 / ONLINE"

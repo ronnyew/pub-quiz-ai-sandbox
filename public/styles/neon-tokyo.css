@@ -32,6 +32,23 @@
   main > :last-child {
     margin-bottom: 0 !important;
   }
+
+  a[href],
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="submit"]:not(:disabled),
+  label[for],
+  .topic-card,
+  .pq-topic-card,
+  .pq-pager-btn {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  input[type="submit"]:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 [data-theme="taproom"] {
@@ -144,6 +161,252 @@
   opacity: 0.35;
   transform: translateX(0);
   transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.pq-lobby-panel--topics {
+  border-color: rgba(0, 255, 204, 0.35);
+  box-shadow: 0 0 35px rgba(0, 255, 204, 0.15);
+}
+
+.pq-lobby-panel--invite {
+  border-color: rgba(255, 45, 120, 0.35);
+  box-shadow: 0 0 25px rgba(255, 45, 120, 0.12);
+}
+
+.pq-lobby-step-badge {
+  background-color: #ff2d78;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 45, 120, 0.5);
+}
+
+.pq-mandatory-badge {
+  color: #ff2d78;
+  background-color: rgba(255, 45, 120, 0.12);
+  border: 1px solid rgba(255, 45, 120, 0.4);
+}
+
+.pq-lobby-alert {
+  width: 100%;
+}
+
+.pq-launch-btn {
+  cursor: pointer;
+  background-color: #ff2d78;
+  border: 1px solid rgba(255, 120, 168, 0.45);
+  box-shadow: 0 0 24px rgba(255, 45, 120, 0.45);
+  color: #ffffff;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+}
+
+.pq-launch-btn:hover {
+  background-color: #ff4789;
+  box-shadow: 0 0 32px rgba(255, 45, 120, 0.65);
+}
+
+.pq-launch-btn:active {
+  transform: scale(0.98);
+}
+
+.pq-launch-btn .pq-launch-label {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+}
+
+.pq-launch-btn .material-symbols-outlined {
+  filter: drop-shadow(0 0 8px #ffffff);
+}
+
+.pq-pager-btn {
+  background-color: #0d101b;
+  border: 1px solid #302840;
+  color: #a098b0;
+}
+
+.pq-pager-btn:hover {
+  color: #ffffff;
+  border-color: #00ffcc;
+}
+
+.pq-pager-btn--active {
+  background-color: #ff2d78;
+  border-color: #ff2d78;
+  color: #ffffff;
+  box-shadow: 0 0 8px #ff2d78;
+}
+
+.pq-pager-btn--active:hover {
+  color: #ffffff;
+  border-color: #ff2d78;
+}
+
+.pq-topic-card {
+  border: 1px solid #302840;
+  background-color: #0f0f1a;
+  min-height: 10rem;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.pq-topic-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 255, 204, 0.6);
+  background-color: #1a1a2e;
+}
+
+.pq-topic-card.pq-topic-card--selected,
+.pq-topic-card:has(.pq-topic-checkbox:checked) {
+  border: 2px solid #ff2d78;
+  background-color: #1a0010;
+  box-shadow:
+    0 0 25px rgba(255, 45, 120, 0.4),
+    inset 0 0 15px rgba(255, 45, 120, 0.2);
+}
+
+.pq-topic-card .pq-topic-category-pill {
+  border: 1px solid rgba(0, 255, 204, 0.4);
+  color: #00ffcc;
+  background-color: transparent;
+}
+
+.pq-topic-card.pq-topic-card--selected .pq-topic-category-pill,
+.pq-topic-card:has(.pq-topic-checkbox:checked) .pq-topic-category-pill {
+  background-color: #ff2d78;
+  color: #ffffff;
+  border-color: #ff2d78;
+  box-shadow: 0 0 8px #ff2d78;
+}
+
+.pq-topic-card .pq-topic-meta {
+  color: #a098b0;
+}
+
+.pq-topic-card.pq-topic-card--selected .pq-topic-meta,
+.pq-topic-card:has(.pq-topic-checkbox:checked) .pq-topic-meta {
+  color: #00ffcc;
+}
+
+.pq-topic-card.pq-topic-card--selected .pq-topic-title,
+.pq-topic-card:has(.pq-topic-checkbox:checked) .pq-topic-title {
+  text-shadow: 0 0 10px rgba(255, 45, 120, 0.5);
+}
+
+.pq-topic-card .pq-topic-check-icon {
+  color: #a098b0;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.pq-topic-card:hover .pq-topic-check-icon {
+  color: #00ffcc;
+}
+
+.pq-topic-card.pq-topic-card--selected .pq-topic-check-icon,
+.pq-topic-card:has(.pq-topic-checkbox:checked) .pq-topic-check-icon {
+  color: #ff2d78;
+}
+
+.pq-invite-copy-btn {
+  color: #001a1a;
+  background-color: #00ffcc;
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.45);
+}
+
+.pq-invite-copy-btn:hover {
+  background-color: #ffffff;
+  color: #0a0a12;
+}
+
+.pq-lobby-pin-badge {
+  border: 2px solid rgba(0, 255, 204, 0.6);
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.25);
+}
+
+/* Dashboard — `design/player/dashboard_with_match_modal/code.html` */
+.pq-dashboard-handle {
+  color: #ff2d78;
+  text-shadow: 0 0 24px rgba(255, 45, 120, 0.65);
+}
+
+.pq-dashboard-signout {
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pq-dashboard-signout:hover {
+  color: #ffffff;
+  border-color: #ff2d78;
+  box-shadow: 0 0 12px rgba(255, 45, 120, 0.45);
+}
+
+.pq-dashboard-card--start {
+  border-color: rgba(255, 45, 120, 0.5);
+  box-shadow: 0 0 30px rgba(255, 45, 120, 0.15);
+}
+
+.pq-dashboard-card--join {
+  border-color: rgba(0, 255, 204, 0.5);
+  box-shadow: 0 0 30px rgba(0, 255, 204, 0.12);
+}
+
+.pq-dashboard-start-cta {
+  background-color: #ff2d78;
+  border-color: #ff2d78;
+  box-shadow: 0 0 20px rgba(255, 45, 120, 0.4);
+}
+
+.pq-dashboard-start-cta:hover {
+  background-color: #b3004e;
+  box-shadow: 0 0 30px rgba(255, 45, 120, 0.7);
+}
+
+.pq-dashboard-join-cta {
+  background-color: #00ffcc;
+  border-color: #00ffcc;
+  color: #0a0a12;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+}
+
+.pq-dashboard-join-cta:hover {
+  background-color: #00e6b8;
+  box-shadow: 0 0 30px rgba(0, 255, 204, 0.7);
+}
+
+.pq-join-pin-input {
+  box-shadow: inset 0 0 12px rgba(0, 255, 204, 0.08);
+}
+
+.pq-join-pin-input:focus {
+  border-color: #00ffcc;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+}
+
+.pq-match-code {
+  color: #00ffcc;
+}
+
+.match-row .row-arrow {
+  opacity: 0;
+  transform: translateX(-0.35rem);
+  transition: opacity 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+}
+
+.match-row:hover .row-arrow,
+.match-row:focus-visible .row-arrow {
+  opacity: 1;
+  transform: translateX(0);
+  filter: drop-shadow(0 0 8px rgba(0, 255, 204, 0.7));
+}
+
+.pq-match-outcome-badge {
+  color: #ff2d78;
+}
+
+.pq-dashboard-history-table {
+  border-color: #302840;
 }
 
 /* Stitch font stacks — explicit so fonts apply before/without Tailwind utility codegen */

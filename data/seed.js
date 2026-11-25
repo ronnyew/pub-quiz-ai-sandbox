@@ -59,6 +59,16 @@ const topicPacks = [
     difficultyRating: 'HARD',
     isFeatured: false,
   },
+  {
+    topicPackId: 'sports_arena_01',
+    title: 'Sports Arena Classics',
+    slug: 'sports-arena-classics',
+    description: 'Olympics, league lore, and the chants from the stands.',
+    category: 'Sports',
+    icon: 'stadium',
+    difficultyRating: 'BALANCED',
+    isFeatured: false,
+  },
 ];
 
 const packById = new Map(topicPacks.map((pack) => [pack.topicPackId, pack]));
@@ -135,6 +145,12 @@ const rows = [
   ['video_game_lore_01', 'MEDIUM', 2, 'Princess Zelda appears in games made by which company?', 'Nintendo', ['Sega', 'Sony', 'Microsoft'], 'C', 'Zelda is a Nintendo franchise.'],
   ['video_game_lore_01', 'HARD', 1, 'Which company makes the Mario games?', 'Nintendo', ['Sega', 'Atari', 'Sony'], 'B', 'Mario is a Nintendo character.'],
   ['video_game_lore_01', 'HARD', 2, 'Elden Ring was developed by which studio?', 'FromSoftware', ['CD Projekt Red', 'Bethesda', 'BioWare'], 'D', 'FromSoftware directed Elden Ring.'],
+  ['sports_arena_01', 'EASY', 1, 'How many players per side are on the field in soccer?', '11', ['9', '10', '12'], 'C', 'Soccer fields eleven players per team.'],
+  ['sports_arena_01', 'EASY', 2, 'Which sport awards the Green Jacket at Augusta?', 'Golf', ['Tennis', 'Cycling', 'Skiing'], 'B', 'The Masters winner receives a green jacket.'],
+  ['sports_arena_01', 'MEDIUM', 1, 'The NBA three-point line is farther from which side of the rim?', 'The arc', ['Baseline', 'Sideline', 'Backboard'], 'D', 'Threes are measured along the arc.'],
+  ['sports_arena_01', 'MEDIUM', 2, 'Which country hosted the 2016 Summer Olympics?', 'Brazil', ['China', 'United Kingdom', 'Russia'], 'A', 'Rio de Janeiro hosted in 2016.'],
+  ['sports_arena_01', 'HARD', 1, 'How many innings are in a standard professional baseball game?', '9', ['7', '8', '10'], 'B', 'A regulation MLB game is nine innings.'],
+  ['sports_arena_01', 'HARD', 2, 'Which tennis tournament is played on grass courts?', 'Wimbledon', ['US Open', 'Australian Open', 'French Open'], 'C', 'Wimbledon uses grass courts.'],
 ];
 
 const questions = rows.map((row) => card(...row));
