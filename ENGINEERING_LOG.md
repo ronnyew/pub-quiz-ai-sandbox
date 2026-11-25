@@ -77,3 +77,15 @@
 1. **What changed.** Deleted `enhanceStaticContentLists` from `content-store.js`. List styling now uses `transformTags` utility classes plus `.content-markdown` CSS (top-level panel, nested `ul`/`ol` indent, cyan `::before` bullets, `::marker` on ordered lists). Regression tests for balanced nested Markdown lists in `test/content-store.test.js` and `test/shell.test.js`. **No regex HTML rewriting** rule added to `CLAUDE.md`, `.cursorrules`, `core-architecture.mdc`, `evaluate-slice`.
 2. **Why.** Regex post-processing broke valid nested `<ul><li><ul>` trees; sanitization output must stay structurally intact.
 3. **Security and cost.** No change to slug/link rules; slightly simpler render path.
+
+## 2026-11-25 — Slice 2: topic packs and balanced sampling
+
+1. **What changed.** Added an in-memory `db.js` Map store, `data/seed.js` (6 host-screen pack titles and 23 questions across easy, medium, and hard), and `buildDeck` in `lib/sample-deck.js`. `GET /api/topic-packs` returns pack metadata only. Tests live in `test/db.test.js` and `test/sample-deck.test.js`.
+2. **Why.** The dealer has to exist before rooms. Pack quotas are floor division, with the remainder given to the earliest packs in host order. The default mix uses largest-remainder on 2/5, 2/5, and 1/5 so the 40/40/20 split stays exact in integer math. Round-robin interleave keeps a pack from sitting next to itself while another selected pack still has cards. Callers get a client deck without answer keys and a secret deck that keeps them.
+3. **Security and cost.** No Firestore client and no credentials; `NODE_ENV=test` never touches GCP. Pack ids are allow-listed before a read. The pack route rejects `limit` above 24, and question reads cap at 500. No server timers or WebSockets.
+
+## 2026-11-25 — Slice 2 evaluator hardening (anti-cheat seed, catalog parity)
+
+1. **What changed.** Seed rows use author-chosen `correctLetter` placements (not `(index - 1) % 4`). `buildDeck` shuffles each question’s options and remaps `correctAnswerId`. Craft Beer pack label is `FUN`; `world_history_01`, `music_80s_90s_01`, and `video_game_lore_01` each have six questions (2× EASY/MEDIUM/HARD). Tests cover suffix unpredictability, deck shuffle, per-pack depth, and 10-question single-pack deals. Governance in `CLAUDE.md`, `core-architecture.mdc`, and `evaluate-slice`.
+2. **Why.** Evaluator warnings: public `questionId` suffixes must not leak answer slots, and every catalog pack must satisfy default 40/40/20 deals up to 10 questions while matching the host-screen Craft Beer badge.
+3. **Security and cost.** Presentation shuffle is O(1) per dealt question with injectable RNG; no extra I/O or background work.
