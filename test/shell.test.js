@@ -143,6 +143,7 @@ test('server modules under test do not start timers', () => {
   const root = path.join(__dirname, '..');
   const files = [
     'index.js',
+    'auth.js',
     'lib/player-layout.js',
     'lib/player-pages.js',
     'lib/content-store.js',

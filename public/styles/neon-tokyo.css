@@ -230,3 +230,164 @@
 .content-markdown ul.static-content-ul ol.static-content-ol li.static-content-li::before {
   content: none;
 }
+
+/* Gateway auth card — match design/player/homepage */
+.pq-auth-card .pq-auth-tab {
+  flex: 1;
+  padding: 0.625rem 0;
+  font-family: "Space Grotesk", monospace, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+  border-radius: 0.25rem;
+  color: #a098b0;
+  transition: all 0.2s ease;
+}
+
+.pq-auth-card .pq-auth-tab:hover {
+  color: #ffffff;
+  background-color: #1e1e30;
+}
+
+.pq-auth-card .pq-auth-tab-active {
+  background-color: #ff2d78;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 45, 120, 0.4);
+}
+
+.pq-auth-card .pq-auth-input {
+  width: 100%;
+  background-color: #0f0f1a;
+  color: #ffffff;
+  border: 1px solid #302840;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: "Inter", sans-serif;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pq-auth-card .pq-auth-input::placeholder {
+  color: rgba(160, 152, 176, 0.7);
+}
+
+.pq-auth-card .pq-auth-input:focus {
+  outline: none;
+  border-color: #00ffcc;
+  box-shadow: 0 0 12px rgba(0, 255, 204, 0.3);
+}
+
+.pq-auth-card .pq-auth-surface {
+  background-color: #1c1c2e;
+}
+
+.pq-auth-card .pq-auth-provider-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem;
+  background-color: #0f0f1a;
+  border: 1px solid #302840;
+  border-radius: 0.5rem;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.pq-auth-card .pq-auth-provider-btn:hover {
+  border-color: #00ffcc;
+  box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+}
+
+.pq-auth-card .pq-auth-provider-btn:active {
+  transform: translate(2px, 2px);
+}
+
+.pq-auth-card .pq-auth-cta-primary {
+  width: 100%;
+  padding: 0.75rem 0;
+  background-color: #ff2d78;
+  color: #ffffff;
+  border: 1px solid #ff2d78;
+  border-radius: 0.5rem;
+  font-family: "Space Grotesk", monospace, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.pq-auth-card .pq-auth-cta-primary:hover {
+  background-color: #b3004e;
+  box-shadow: 0 0 20px rgba(255, 45, 120, 0.5);
+}
+
+.pq-auth-card .pq-auth-cta-secondary {
+  width: 100%;
+  padding: 0.5rem 0;
+  background-color: #0f0f1a;
+  color: #ffffff;
+  border: 1px solid #302840;
+  border-radius: 0.5rem;
+  font-family: "Space Grotesk", monospace, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.pq-auth-card .pq-auth-cta-secondary:hover {
+  border-color: #00ffcc;
+  color: #00ffcc;
+}
+
+.pq-auth-card #pq-recaptcha.pq-recaptcha-host {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  min-height: 0;
+  max-height: 0;
+  overflow: hidden;
+}
+
+.pq-auth-card #pq-recaptcha.pq-recaptcha-host.pq-recaptcha-challenge-visible {
+  max-height: none;
+  overflow: visible;
+  min-height: 0;
+}
+
+.pq-auth-card #pq-recaptcha.pq-recaptcha-host iframe {
+  border: none !important;
+  background: transparent !important;
+}
+
+.pq-auth-card .pq-auth-alert {
+  font-family: "Inter", sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.625;
+  border-radius: 0.375rem;
+  padding: 0.875rem 1rem;
+}
+
+.pq-auth-card .pq-auth-alert-error {
+  background: rgba(45, 12, 16, 0.92);
+  border: 1px solid #ff3b30;
+  box-shadow: 0 0 16px rgba(255, 59, 48, 0.35);
+  color: #f0f0f8;
+}
+
+.pq-auth-card .pq-auth-alert-success {
+  background: rgba(0, 77, 61, 0.35);
+  border: 1px solid #00ffcc;
+  box-shadow: 0 0 16px rgba(0, 255, 204, 0.25);
+  color: #f0f0f8;
+}
+
+.grecaptcha-badge {
+  visibility: hidden !important;
+}

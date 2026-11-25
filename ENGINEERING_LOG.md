@@ -89,3 +89,51 @@
 1. **What changed.** Seed rows use author-chosen `correctLetter` placements (not `(index - 1) % 4`). `buildDeck` shuffles each question’s options and remaps `correctAnswerId`. Craft Beer pack label is `FUN`; `world_history_01`, `music_80s_90s_01`, and `video_game_lore_01` each have six questions (2× EASY/MEDIUM/HARD). Tests cover suffix unpredictability, deck shuffle, per-pack depth, and 10-question single-pack deals. Governance in `CLAUDE.md`, `core-architecture.mdc`, and `evaluate-slice`.
 2. **Why.** Evaluator warnings: public `questionId` suffixes must not leak answer slots, and every catalog pack must satisfy default 40/40/20 deals up to 10 questions while matching the host-screen Craft Beer badge.
 3. **Security and cost.** Presentation shuffle is O(1) per dealt question with injectable RNG; no extra I/O or background work.
+
+## 2026-11-25 — Slice 3: auth and screen-name setup
+
+1. **What changed.** Added `auth.js` (HMAC session cookies, `validateHandle`, `getAuthProviders`, `getAdminPolicy`, Firebase client config from env), gateway FirebaseUI mount with Google + anonymous guest, `GET/POST /onboarding/handle`, `POST /api/handle`, `POST /api/auth/session`, `GET /dashboard` placeholder, and CMS copy for auth/onboarding/dashboard. Tests in `test/auth.test.js` and `test/handle.test.js`.
+2. **Why.** Identity and handle rules must be enforced server-side before rooms. Sessions are signed with `SESSION_SECRET` (fail closed in production). Tests drive auth with fake identities under `NODE_ENV=test`; production verifies Firebase `idToken` via Identity Toolkit lookup. Admin allow-lists stay env-only with no hardcoded domains.
+3. **Security and cost.** Handles are validated with `^[A-Za-z0-9]{3,18}$` and escaped before HTML echo or JSON response. No API keys in repo; no server polling or timers. Token verification is request-scoped `fetch` only when a client posts an `idToken`.
+
+## 2026-11-25 — Slice 3 gateway auth fidelity (homepage tabs + Firebase Auth SDK)
+
+1. **What changed.** Replaced FirebaseUI widget with a Stitch-aligned tabbed gateway (`Federated / SSO` vs `Email & Password`), custom Neon Tokyo inputs (`.pq-auth-input`, `#13131f` / `#f0f0f8`), and `public/scripts/gateway-auth.js` for Google, anonymous guest, email/password, passwordless email link, and phone SMS flows. `getAuthProviders` now exposes `email`, `emailLink`, and `phone`, default-on when Firebase env is set (`AUTH_ENABLE_EMAIL` / `AUTH_ENABLE_PHONE` can disable). CMS labels extended in `site-content.json`; tests expanded in `test/auth.test.js`.
+2. **Why.** Homepage Stitch is the visual contract; Material/FirebaseUI white inputs broke fidelity. A single client script keeps styling owned by `neon-tokyo.css` while still exchanging verified `idToken`s at `POST /api/auth/session` with redirect hints to handle onboarding or dashboard.
+3. **Security and cost.** Session providers are allow-listed server-side; email-link completion stays on `/` with server-set cookies only after token lookup. reCAPTCHA loads on demand for phone only. No new background work or persistent connections.
+
+## 2026-11-25 — Slice 3 passwordless email link + crimson auth alerts
+
+1. **What changed.** Email tab is **Email Link** only (single field + **Send Magic Sign-In Link**); password, forgot-password, and create-account UI removed. Crimson `role="alert"` banner for errors; cyan success banner for link-sent confirmation. `getAuthProviders` emits `emailLink` only; `password` rejected in test sessions; Firebase `password` provider ids map to `emailLink` after token lookup. Cross-device link completion uses `#pq-email-confirm-wrap`.
+2. **Why.** MVP auth is federated + magic link + phone + guest—no password credentials on the gateway. Styled alerts keep Firebase/session errors inside the Stitch card without `innerHTML`.
+3. **Security and cost.** No password provider in session allow-list; magic-link URL pinned to `origin + '/'`. Alerts use `textContent` only.
+
+## 2026-11-25 — Slice 3 per-provider auth toggles and 3-tab gateway
+
+1. **What changed.** `getAuthProviders()` reads `AUTH_ENABLE_GOOGLE`, `AUTH_ENABLE_EMAIL`, `AUTH_ENABLE_PHONE`, and `AUTH_ENABLE_ANONYMOUS` (default on; `"0"`/`"false"` off). Gateway auth card uses up to three tabs (**Sign In**, **Email**, **Phone**) with conditional panels and hidden tab bar when only one tab remains. `POST /api/auth/session` returns **403** for disabled providers. Client `gateway-auth.js` switches `data-auth-panel` tabs.
+2. **Why.** Ops can mirror Firebase Console enablement in env without template edits. Phone/SMS moves off the federated row into its own tab for clearer UX.
+3. **Security and cost.** Provider gate runs before session minting; UI only renders enabled methods. No extra server polling.
+
+## 2026-11-25 — Slice 3 phone tab progressive SMS disclosure
+
+1. **What changed.** Phone tab uses primary **Send SMS Code**, hides `#pq-sms-verify-step` until `signInWithPhoneNumber` succeeds, then focuses the code field with primary **Verify** and **Change Phone Number**. `#pq-recaptcha` is zero-size until a challenge renders; client uses invisible `RecaptchaVerifier` with fallback. Tests assert initial HTML shape.
+2. **Why.** Matches email-tab CTA hierarchy and keeps the card clean before SMS is dispatched.
+3. **Security and cost.** reCAPTCHA still required for phone auth; no layout shift until Google injects a challenge.
+
+## 2026-11-25 — Slice 3 zero-PII handle persistence
+
+1. **What changed.** `db.js` adds `getUserProfile` / `saveUserProfile` storing only `{ uid, handle, provider, updatedAt }`. Tests use in-memory Map; local dev persists `.data/users.json` (gitignored); production uses Firestore `users/{uid}` when GCP env is set. `createPlayerSession` puts `isAdmin` boolean (from in-memory `isAdminEmail` at sign-in) and never email in `pq_session`. Sign-in restores saved handle and returns `redirectTo`; `GET /` redirects signed-in users by handle state.
+2. **Why.** Returning players keep handles across restarts without persisting contact PII. Admin checks use the verified token email only during the request, then drop it.
+3. **Security and cost.** Cookie and profile writes assert no `email`/`phoneNumber` keys. Firestore client loads lazily only when credentials/project env indicate production; tests never touch disk or GCP.
+
+## 2026-11-25 — Slice 3 evaluator auth hardening
+
+1. **What changed.** Removed anonymous guest sign-in (`getAuthProviders`, gateway HTML, `gateway-auth.js`). `identityFromIdToken` / `identityFromFirebaseLookup` in `auth.js` resolve provider from JWT `firebase.sign_in_provider` and `providerUserInfo`, reject empty linked providers and raw `password` / `anonymous` with **403**. `AUTH_ENABLE_APPLE` gates `apple.com`. `GET /dashboard` redirects users without a locked handle to `/onboarding/handle`. `pq_session` cookies gain `Secure` on HTTPS, production, or Cloud Run (`K_SERVICE`). `.dockerignore` excludes `.data/`. Added `test/auth-identity.test.js`.
+2. **Why.** Prevents mis-labeled sessions from Firebase lookup, closes the handle-bypass on dashboard, aligns Apple with Firebase provider IDs, and keeps dev profile files out of container images.
+3. **Security and cost.** Forbidden providers fail before cookie mint; session cookies are not sent over plain HTTP in deployed environments. No new background work.
+
+## 2026-11-25 — Slice 3 magic-link provider resolution & phone opt-in
+
+1. **What changed.** `resolveProviderFromFirebaseUser` maps Firebase `signInWithEmailLink` tokens (`sign_in_provider: password`, verified email, no `passwordHash`) to `emailLink` while raw password accounts stay forbidden. `AUTH_ENABLE_PHONE` now defaults off (opt-in via `1`/`true`). Phone tab includes CMS-sourced Google reCAPTCHA attribution links. Gateway `.pq-auth-input` fill/border tokens match Stitch homepage (`#0f0f1a` / white text).
+2. **Why.** Magic-link players were rejected as `password`; SMS must not bill until ops explicitly enable phone auth; hidden reCAPTCHA badge requires visible policy links.
+3. **Security and cost.** Unverified or password-hash accounts still fail closed with **403**; phone/SMS UI absent unless env enables it.

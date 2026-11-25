@@ -5,10 +5,20 @@ const QUESTION_DIFFICULTY = new Set(['EASY', 'MEDIUM', 'HARD']);
 const MAX_PACK_LIMIT = 24;
 const MAX_QUESTION_READ = 500;
 
+const fs = require('node:fs');
+const path = require('node:path');
+
+const USERS_FILE = path.join(__dirname, '.data', 'users.json');
+const USER_UID = /^[A-Za-z0-9_-]{1,128}$/;
+
 const memory = {
   topicPacks: new Map(),
   questions: new Map(),
+  users: new Map(),
 };
+
+let usersHydratedFromDisk = false;
+let firestoreClient = null;
 
 let seeded = false;
 
@@ -205,8 +215,128 @@ function validateQuestion(question) {
   }
 }
 
+function assertUid(uid) {
+  if (typeof uid !== 'string' || !USER_UID.test(uid)) {
+    throw new TypeError('invalid uid');
+  }
+}
+
+function shouldUseFirestore() {
+  if (process.env.NODE_ENV === 'test') return false;
+  if (String(process.env.DATA_BACKEND || '').toLowerCase() === 'memory') return false;
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) return true;
+  if (process.env.K_SERVICE) return true;
+  if (process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT) return true;
+  return false;
+}
+
+function getFirestoreClient() {
+  if (!firestoreClient) {
+    const { Firestore } = require('@google-cloud/firestore');
+    firestoreClient = new Firestore();
+  }
+  return firestoreClient;
+}
+
+function toStoredProfile(uid, { handle, provider, updatedAt }) {
+  if (typeof handle !== 'string' || !/^[A-Za-z0-9]{3,18}$/.test(handle)) {
+    throw new TypeError('invalid handle');
+  }
+  if (typeof provider !== 'string' || provider.trim() === '') {
+    throw new TypeError('invalid provider');
+  }
+  return {
+    uid,
+    handle,
+    provider: provider.trim(),
+    updatedAt: updatedAt || new Date().toISOString(),
+  };
+}
+
+function sanitizeLoadedProfile(data, uid) {
+  if (!data || typeof data !== 'object') return null;
+  try {
+    return toStoredProfile(uid, {
+      handle: data.handle,
+      provider: data.provider,
+      updatedAt: data.updatedAt,
+    });
+  } catch {
+    return null;
+  }
+}
+
+function ensureUsersHydrated() {
+  if (process.env.NODE_ENV === 'test' || usersHydratedFromDisk || shouldUseFirestore()) {
+    return;
+  }
+  usersHydratedFromDisk = true;
+  try {
+    const raw = fs.readFileSync(USERS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return;
+    for (const [uid, record] of Object.entries(parsed)) {
+      if (!USER_UID.test(uid)) continue;
+      const profile = sanitizeLoadedProfile(record, uid);
+      if (profile) memory.users.set(uid, profile);
+    }
+  } catch (err) {
+    if (err && err.code !== 'ENOENT') throw err;
+  }
+}
+
+function persistUsersToDisk() {
+  if (process.env.NODE_ENV === 'test' || shouldUseFirestore()) return;
+  const payload = Object.fromEntries(memory.users.entries());
+  fs.mkdirSync(path.dirname(USERS_FILE), { recursive: true });
+  fs.writeFileSync(USERS_FILE, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
+async function getUserProfile(uid) {
+  assertUid(uid);
+  if (process.env.NODE_ENV === 'test') {
+    const profile = memory.users.get(uid);
+    return profile ? structuredClone(profile) : null;
+  }
+  if (shouldUseFirestore()) {
+    const snapshot = await getFirestoreClient().collection('users').doc(uid).get();
+    if (!snapshot.exists) return null;
+    return sanitizeLoadedProfile(snapshot.data(), uid);
+  }
+  ensureUsersHydrated();
+  const profile = memory.users.get(uid);
+  return profile ? structuredClone(profile) : null;
+}
+
+async function saveUserProfile(uid, { handle, provider }) {
+  assertUid(uid);
+  const record = toStoredProfile(uid, { handle, provider });
+  if (process.env.NODE_ENV === 'test') {
+    memory.users.set(uid, record);
+    return structuredClone(record);
+  }
+  if (shouldUseFirestore()) {
+    await getFirestoreClient().collection('users').doc(uid).set(record, { merge: true });
+    return structuredClone(record);
+  }
+  ensureUsersHydrated();
+  memory.users.set(uid, record);
+  persistUsersToDisk();
+  return structuredClone(record);
+}
+
+function resetUserProfilesForTest() {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('resetUserProfilesForTest is only available in test');
+  }
+  memory.users.clear();
+}
+
 module.exports = {
   seed,
   listTopicPacks,
   listQuestionsByPackIds,
+  getUserProfile,
+  saveUserProfile,
+  resetUserProfilesForTest,
 };
