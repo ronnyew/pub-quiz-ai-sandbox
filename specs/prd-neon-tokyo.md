@@ -52,7 +52,7 @@
 - **FR-04 (Multi-Topic Selection & Discovery):**
   - Integrated topic search bar with quick clear (`ESC`).
   - 6 topic packs displayed per view with interactive checkboxes allowing multi-pack selection.
-  - Quiz engine dynamically samples and interleaves questions evenly across all selected topic packs.
+  - Quiz engine pools questions from all selected topic packs, shuffles them randomly, and deals the requested count.
   - HUD pagination component (`Showing 1–6 of 24 Topics`).
 - **FR-05 (Invite Dispatch):**
   - Single-click URL copy dispatch field: `${APP_BASE_URL || requestOrigin || https://pubquiz.app}/join?game={pin}` (e.g. `https://pubquiz.app/join?game=849284`).
@@ -71,7 +71,7 @@
   - Synchronized player ready status indicator (`2/4 READY`).
 - **FR-08 (Question Presentation):**
   - High-contrast, wide container typography for immediate readability under time limits.
-  - Topic category, tags, and difficulty point values (`+500 PTS`).
+  - Minimalist active-play HUD: question index badge and ready count only (no topic pill, tags, or `+N PTS` badge while the round is open). After the round closes (`roundPhase === REVEAL`), clients may receive `correctAnswerId`, per-player `isCorrect` / `pointsAwarded`, and cumulative `scores`—never `explanation` or citations between questions.
 - **FR-09 (Answer Selection):**
   - 4 high-contrast multi-choice targets (`A`, `B`, `C`, `D`).
   - Tactile selection states with neon pink locked-in borders and badges.
@@ -160,7 +160,6 @@
     "category": "BREWERY",
     "icon": "beer_mug_neon",
     "totalQuestions": 48,
-    "difficultyRating": "BALANCED",
     "isFeatured": true
   },
 
@@ -168,8 +167,6 @@
     "questionId": "7656",
     "topicPackId": "45634",
     "category": "Bavarian History",
-    "tags": ["beer", "history", "germany", "regulations"],
-    "difficultyRating": "MEDIUM",
     "basePoints": 10,
     "questionText": "Which traditional German brewing purity law, enacted in 1516 in Bavaria, mandates that beer can only be brewed from water, barley, and hops?",
     "options": [
@@ -204,10 +201,9 @@
 
 ### 5.3 Knowledge Base Querying & Sampling Algorithm
 When a host launches a game with multiple `topicPackIds`:
-1. **Even Sampling:** The engine computes `perPackCount = Math.floor(totalQuestionCount / topicPackIds.length)`.
-2. **Diversity / Difficulty Balancing:** Questions are selected matching the host's difficulty filter (or a balanced mix of 40% Easy, 40% Medium, 20% Hard) using indexed Firestore queries (`topicPackId == id && difficultyRating in [...]`).
-3. **Randomized Interleaving:** The composite question deck is shuffled so questions from different selected packs appear intermittently rather than back-to-back.
-4. **Cheat Prevention:** Only `options` and `questionText` are sent to client sockets during an active question; `correctAnswerId` and `explanation` remain secured on backend Cloud Functions until the 30-second round timer resolves.
+1. **Pool:** Load all questions belonging to the selected packs (each pack maintains at least 10 questions).
+2. **Shuffle & slice:** Fisher–Yates shuffle the pooled questions, take `questionCount`, then shuffle each question’s option order and remap `correctAnswerId`.
+3. **Cheat prevention:** While `roundPhase === OPEN'`, clients receive only `questionText` and `options`. When the round closes (`closesAt` or all players answered), `REVEAL` payloads may expose `correctAnswerId`, per-player `isCorrect` / `pointsAwarded`, and cumulative `scores`. `explanation` and `sourceCitations` remain server-only (not sent in play-state or answer responses).
 
 ---
 

@@ -139,6 +139,32 @@
       "title_line_accent": "GAME",
       "body": "Reserve a six-digit Game PIN, pick topic packs, and dispatch invite links. Creating a room stores lobby state on the server—submit below when you are ready.",
       "submit_label": "CREATE NEW GAME"
+    },
+    "gameplay": {
+      "title_line_before": "PLAY A",
+      "title_line_accent": "GAME",
+      "game_pin_label": "GAME PIN RESERVATION",
+      "question_badge_template": "QUESTION {current} / {total}",
+      "countdown_label": "COUNTDOWN TIMER",
+      "awaiting_answers_label": "AWAITING ANSWERS",
+      "ready_count_template": "{ready} / {total} READY",
+      "points_template": "+{points} PTS",
+      "option_selected_label": "SELECTED",
+      "completed_headline": "ROUND CLOSED",
+      "completed_body": "This session is complete. Return to your dashboard for the full recap in an upcoming release.",
+      "return_dashboard_label": "RETURN TO DASHBOARD",
+      "answer_error_generic": "We could not record that answer.",
+      "answer_error_already_answered": "Your answer is locked in. You cannot change it.",
+      "answer_error_network": "We could not reach the server. Check your connection.",
+      "answer_locked_label": "LOCKED IN"
+    },
+    "join_unavailable": {
+      "title_line_before": "PLAY A",
+      "title_line_accent": "GAME",
+      "game_pin_label": "GAME PIN RESERVATION",
+      "headline": "GAME NOT FOUND",
+      "body": "This game was completed or not found.",
+      "return_dashboard_label": "RETURN TO DASHBOARD"
     }
   },
   "footer_links": [

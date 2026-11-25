@@ -67,6 +67,10 @@
       });
       if (!response.ok) return;
       const game = await response.json();
+      if (game.status === 'ACTIVE' || game.status === 'COMPLETED') {
+        window.location.assign(`/game/${encodeURIComponent(gamePin)}/play`);
+        return;
+      }
       if (Array.isArray(game.players)) {
         renderPlayers(game.players);
       }

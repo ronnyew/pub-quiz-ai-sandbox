@@ -185,3 +185,45 @@
 1. **What changed.** Added **Spec & Roadmap Synchronization** rule to `CLAUDE.md` and updated Slice 4 in `specs/roadmap.md` and FR-03/05/06 in `specs/prd-neon-tokyo.md` for `/game`, Game PIN, and `${APP_BASE_URL||origin||pubquiz.app}/join?game=`. `DATA_BACKEND=firestore` no longer blocks seeded `listTopicPacks`; joins dedupe inside `updateGameRoom`; `createWaitingGame` retries on `create()` collision; `buildInviteUrl` defaults to `https://pubquiz.app`; CMS `formatCopyTemplate` for dashboard history pager and lobby labels; `data-ping-template` + navigation timing in `room-lobby-sync.js`.
 2. **Why.** Evaluator warnings on stale specs, topic-pack footgun, join/PIN races, hardcoded UI copy, and clock-skew ping text.
 3. **Security and cost.** Atomic room writes prevent duplicate players; no new background work. Ping remains client-only display; Firestore/topic-pack split keeps seed reads in-process without extra queries.
+
+## 2026-11-25 — Slice 5 live gameplay and server-graded timer
+
+1. **What changed.** Added `game_room_secrets/{roomId}` persistence in `db.js` (memory, local disk, Firestore) with `runGameRoomBundleTransaction` for atomic answer scoring. `lib/grade.js` grades on server timestamps; `lib/rooms.js` implements `launchActiveGame`, `submitGameAnswer`, `advanceGameQuestion`, and play-state projection. `POST /game/:gamePin/launch` now deals via `buildDeck`, sets `ACTIVE`, and redirects to `GET /game/:gamePin/play`. New APIs: `GET /api/games/:pin/question`, `POST /api/games/:pin/answers` (and `/api/rooms` aliases), `POST .../advance`. Neon Tokyo gameplay UI from `design/player/gameplay/code.html` in `renderGameplayPage` with copy in `content/site-content.json` and client sync in `public/scripts/gameplay-sync.js` (rAF timer, visibility-aware fetch). Waiting lobby auto-navigates when status becomes `ACTIVE`.
+2. **Why.** Slice 5 requires answer keys and timer windows only in secrets, one graded submission per player per question, idempotent post-close advance, and FR-07–FR-09 HUD without server timers or WebSockets.
+3. **Security and cost.** Public `game_rooms` store `dealQuestions` without keys; active JSON omits explanations/citations until after `closesAt`. Bundle transactions prevent double answers under concurrency. Client polling follows the Slice 4 visible-tab pattern; no background server loops.
+
+## 2026-11-25 — Launch player merge, local rollback, REVEAL without explanation
+
+1. **What changed.** `runGameRoomLaunchTransaction` merges `players` and zeroed `scores` from the transactional `WAITING` snapshot so late joiners survive launch; local persistence restores the prior `WAITING` room on disk/memory if secrets write fails after the room write. `REVEAL` play payloads expose `correctAnswerId`, grading fields, and `scores` but not `explanation`. Slice 2 roadmap done-checks and PRD §5.3 synced to pure-shuffle dealing.
+2. **Why.** Slice 5 audit warnings on launch races and stale Slice 2 spec bullets; product still hides explanations between questions while allowing score feedback after close.
+3. **Security and cost.** Explanations remain server-only; no extra Firestore reads beyond the launch transaction.
+
+## 2026-11-25 — Full-deck launch and no in-round answer reveal
+
+1. **What changed.** `resolveLaunchQuestionCount` deals every question across selected topic packs (max 100) when launch omits `questionCount`, so three 10-question packs yield a 30-question game. Removed client reveal panel and stopped attaching `reveal` / grading fields to `GET/POST` play payloads—players keep a locked selection until advance.
+2. **Why.** Host expectation is pack count × questions per pack; product pacing avoids showing explanations or correct answers between questions while server-side grading stays in `game_room_secrets`.
+3. **Security and cost.** Same anti-cheat split; `listQuestionsByPackIds` scales with Firestore pool size (still capped at read/deal limits).
+
+## 2026-11-25 — Slice 5 evaluator remediation (anti-cheat, atomic launch, no difficulty)
+
+1. **What changed.** `roundPhase` (`OPEN` vs `REVEAL`) redacts `isCorrect`, `pointsAwarded`, and answer keys from `POST/GET` play APIs until the round closes; `buildRevealPayload` runs in REVEAL. `runGameRoomLaunchTransaction` atomically writes `game_rooms` + `game_room_secrets` while `WAITING`. `GET …/question` and host-only `POST …/advance` enforce room membership. `buildDeck` now pools, shuffles, and slices questions (no difficulty/tags); seed packs hold 10 questions each. Gameplay HUD templates come from `data-*` CMS attrs; host-only client advance; specs (`roadmap`, `prd`, `CLAUDE.md`) synced to minimalist play UI.
+2. **Why.** Close Slice 5 evaluator CRITICAL/WARNING findings without leaking grading early or leaving mismatched launch writes; remove obsolete difficulty-mix product surface.
+3. **Security and cost.** Early answerers cannot infer correct letters from API payloads; concurrent launch cannot fork secrets; no new server loops—same visibility-gated client refresh.
+
+## 2026-11-25 — Gameplay auto-advance, join unavailable UX
+
+1. **What changed.** Removed host “next question” control. Server `advanceGameQuestion` advances when the timer expires or every player has answered; play-state exposes `allPlayersAnswered` and reveal after all answer. Client `gameplay-sync.js` rebuilds options and question chrome on question change, schedules advance 3s after all-answer or immediately after timer expiry, and toggles a solid green dot when ready. Join failures for missing/completed games render `renderJoinUnavailablePage` (ROUND CLOSED layout) with `join_unavailable` copy in `site-content.json`. Renamed HUD label to **AWAITING ANSWERS**.
+2. **Why.** Match multiplayer/solo pacing rules without manual host clicks; fix stale A/B/C/D tiles after auto-advance; replace plain-text join errors with branded CMS-driven messaging.
+3. **Security and cost.** Advance still server-gated (all answered or timer). No new polling loops on the server; client uses existing visibility-aware refresh.
+
+## 2026-11-25 — Gameplay HUD polish and mid-game join
+
+1. **What changed.** Timer ring turns orange ≤10s and red ≤5s. Play-state API no longer sends reveal/explanation during round transitions; client skips answer reveal. Removed category/tag row from gameplay. `joinActiveGame` lets new players enter `ACTIVE` rooms on `/join` and land on the live question/timer. Answer errors use Neon Tokyo `pq-auth-alert-error` banners with copy from `site-content.json` (`answer_error_generic`, `answer_error_already_answered`, `answer_error_network`); no `window.alert`.
+2. **Why.** Match product pacing and anti-cheat UX; fix mid-game invite flow; keep messaging CMS-driven.
+3. **Security and cost.** Answer keys remain server-only; late join only appends handle to public room doc.
+
+## 2026-11-25 — Gameplay HUD timer and question badge styling
+
+1. **What changed.** Timer ring only changes stroke/glow (`#00ffcc` → `#9d4edd` at ≤10s → `#ff2d78` at ≤5s); numeric countdown and “s” suffix stay white/cyan. Removed `+N PTS` above the timer. Question badge matches Stitch: `self-start` pink pill, `text-xs` hotel_class icon.
+2. **Why.** Product feedback to align with `design/player/gameplay/code.html` without distracting digit color shifts.
+3. **Security and cost.** Presentation-only.

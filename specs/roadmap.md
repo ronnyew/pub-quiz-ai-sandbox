@@ -89,17 +89,17 @@ Stitch footers use `href="#"`. Implementation must not.
 
 ### 2.4 Sampling (PRD §5.3, made testable)
 
-`buildDeck({ topicPackIds, questionCount, difficulty, rng })`:
+`buildDeck({ topicPackIds, questionCount, rng })`:
 
-1. `perPack = Math.floor(questionCount / topicPackIds.length)`. Remainder `questionCount % n` is given one extra question each to the first remainder packs, in the host’s pack order.
-2. Default difficulty mix inside each pack quota: 40% easy, 40% medium, 20% hard (largest remainder method). An explicit host filter (`EASY` | `MEDIUM` | `HARD`) uses only that rating.
-3. Interleave round-robin across packs so two questions from the same pack are not adjacent when another pack still has cards. `rng` is injectable. Tests pass a seeded function. Production uses `Math.random`.
-4. The object returned to clients drops `correctAnswerId`, `explanation`, and `sourceCitations`. The secret copy keeps all three. `sourceCitations` is the PRD §5.2 array of `{ title, link }`.
+1. Pool every question from the selected packs (each pack ships at least 10 in seed data).
+2. Fisher–Yates shuffle the pool with injectable `rng` (tests use a seeded function; production uses `Math.random`).
+3. Slice the first `questionCount` entries. For each dealt question, shuffle option order and remap `correctAnswerId`.
+4. The client deck keeps only `questionId`, `questionText`, and `options`. The secret deck keeps `correctAnswerId`, `basePoints`, `explanation`, and `sourceCitations`.
 
 ### 2.5 Normalized entities
 
-- **TopicPack:** `topicPackId`, `title`, `slug`, `description`, `category`, `icon`, `totalQuestions`, `difficultyRating`, `isFeatured`
-- **Question:** `questionId`, `topicPackId`, `category`, `tags`, `difficultyRating` (`EASY`|`MEDIUM`|`HARD`), `basePoints`, `questionText`, `options[{id,text}]`, `correctAnswerId`, `explanation`, `sourceCitations[{title,link}]` (PRD §5.2)
+- **TopicPack:** `topicPackId`, `title`, `slug`, `description`, `category`, `icon`, `totalQuestions`, `isFeatured`
+- **Question (bank):** `questionId`, `topicPackId`, `category`, `basePoints`, `questionText`, `options[{id,text}]`, `correctAnswerId`, `explanation`, `sourceCitations[{title,link}]` (PRD §5.2)
 - **GameRoom (public):** `roomId` (6 digits), `hostUserId`, `status` (`WAITING`|`ACTIVE`|`COMPLETED`), `topicPackIds`, `questionCount`, `timeLimitPerQuestion` (30), `currentQuestionIndex`, `players[{userId,handle}]`, `createdAt`
 - **PlayerResponse:** `roomId`, `questionId`, `userId`, `selectedAnswerId`, `isCorrect`, `latencyMs`, `pointsAwarded`, `timestamp` (server clock)
 
@@ -147,7 +147,7 @@ Stitch footers use `href="#"`. Implementation must not.
 
 **Goal.** Seed packs and questions, and ship the §5.3 dealer as a pure function with tests. No room UI yet.
 
-**In scope.** `db.js` mock + seed of at least 4 packs and 12 questions spanning easy, medium, and hard (enough to prove quotas and interleave). `buildDeck` per §2.4. A read-only `GET /api/topic-packs` returns pack metadata only (no questions, no answer keys), with `limit` capped at 24.
+**In scope.** `db.js` mock + seed of at least 4 packs with 10+ questions each. `buildDeck` per §2.4 (pure shuffle, no difficulty quotas). A read-only `GET /api/topic-packs` returns pack metadata only (no questions, no answer keys), with `limit` capped at 24.
 
 **Out of scope.** Host selector UI, room documents, scoring.
 
@@ -165,10 +165,9 @@ Stitch footers use `href="#"`. Implementation must not.
 **Executable done-check.** `npm test` exits 0, and the suite asserts all of the following:
 
 - With `NODE_ENV=test`, seeding and reads do not require GCP credentials
-- `buildDeck` for 3 packs and `questionCount` 10 yields counts `4,3,3` in pack-id order (floor division plus remainder to the earliest packs)
-- Default mix inside a large quota is 40/40/20 within one question of the ideal, using the largest-remainder rule
-- An explicit `HARD` filter returns only `HARD`
-- Interleave never places the same `topicPackId` in two adjacent slots when another selected pack still has unused questions
+- `buildDeck` pools selected packs, shuffles, and slices `questionCount` (no per-pack quotas or difficulty filters)
+- Each seed pack includes at least 10 questions
+- Option order is shuffled per question with `correctAnswerId` remapped after shuffle
 - The client deck objects have `questionText` and `options` and do not have `correctAnswerId`, `explanation`, or `sourceCitations`
 - `GET /api/topic-packs` omits question bodies and rejects a `limit` above 24
 
@@ -261,11 +260,11 @@ Stitch footers use `href="#"`. Implementation must not.
 
 **In scope.**
 
-- Launch calls `buildDeck`, writes the public projection onto the room, writes keys and the question window (`openedAt`, `closesAt = openedAt + 30000`) to `game_room_secrets/{roomId}`, sets `ACTIVE`.
-- Gameplay page (FR-07–FR-09): question text, topic, tags, point value, 30s ring driven by `closesAt` from the server (client clock is display-only), ready count, four targets `A` `B` `C` `D` with a locked neon-pink state after `POST /api/rooms/:pin/answers`.
+- Launch calls `buildDeck` inside a single `runGameRoomLaunchTransaction` that writes `game_rooms/{roomId}` and `game_room_secrets/{roomId}` atomically while `status === WAITING'`.
+- Gameplay page (FR-07–FR-09): minimalist HUD—question badge and ready count from `content/site-content.json` templates, 30s ring driven by `closesAt` (client clock display-only), awaiting-answers indicator, four `A`–`D` targets with locked neon-pink state after `POST /api/games/:pin/answers`. No topic pill, tags, or `+N PTS` badge during active play.
 - Grade on the server: correct and `receivedAt <= closesAt` awards `basePoints`; wrong or late awards 0. `latencyMs = receivedAt - openedAt`. One answer per player per question.
-- Advance when the host requests the next question or when a player fetch sees `Date.now() > closesAt` and calls the existing advance route once. That route is idempotent. No in-process timer.
-- Client payload for the open question never includes the key, the explanation, or `sourceCitations`. After `closesAt`, the response may include the correct option id, explanation, and citations for the question that just closed.
+- Launch without an explicit count deals **all** questions pooled from selected packs (capped at 100). While `roundPhase === OPEN'`, play APIs omit grading fields. In `REVEAL`, payloads may include `correctAnswerId`, `isCorrect`, `pointsAwarded`, and cumulative `scores` but never `explanation` or `sourceCitations`.
+- Only the host may call `POST …/advance` (membership required). Advance when the timer expires or every player has answered (host client schedules after reveal). Idempotent. No in-process timer.
 
 **Out of scope.** Final podium, XP, match drawer.
 

@@ -6,7 +6,9 @@ const {
   renderGatewayPage,
   renderGameStartPage,
   renderHandlePage,
+  renderGameplayPage,
   renderHostLobbyPage,
+  renderJoinUnavailablePage,
   renderStaticContentPage,
   renderWaitingRoomPage,
 } = require('./lib/player-pages');
@@ -16,9 +18,13 @@ const {
   filterAndPageTopicPacks,
   getPublicGame,
   isValidGamePin,
+  advanceGameQuestion,
+  getGameplayQuestionJson,
   joinWaitingGame,
+  joinActiveGame,
+  launchActiveGame,
   resolvePublicBaseUrl,
-  saveLobbyPackSelection,
+  submitGameAnswer,
 } = require('./lib/rooms');
 const { getGameRoom, getUserProfile, listTopicPacks, saveUserProfile } = require('./db');
 const {
@@ -48,6 +54,14 @@ app.use(attachSession);
 function requireSession(req, res, next) {
   if (!req.session?.uid) {
     res.redirect(302, '/');
+    return;
+  }
+  next();
+}
+
+function requireSessionApi(req, res, next) {
+  if (!req.session?.uid) {
+    res.status(401).json({ error: 'unauthorized' });
     return;
   }
   next();
@@ -343,21 +357,139 @@ app.post('/game/:gamePin/launch', requireSessionWithHandle, async (req, res) => 
     return;
   }
   try {
-    const result = await saveLobbyPackSelection({
+    const result = await launchActiveGame({
       gamePin,
       hostUserId: req.session.uid,
       topicPackIds,
     });
     if (!result.ok) {
-      const status = result.reason === 'forbidden' ? 403 : 404;
-      res.status(status).type('text/plain').send('Unable to save pack selection');
+      const status = result.reason === 'forbidden' ? 403 : result.reason === 'not_found' ? 404 : 400;
+      res.status(status).type('text/plain').send('Unable to launch game');
       return;
     }
-    res.redirect(302, `/game/${gamePin}?saved=1`);
+    res.redirect(303, `/game/${gamePin}/play`);
   } catch {
     await renderGameLobby(req, res, gamePin, { error: copy.launch_error_invalid });
   }
 });
+
+app.get('/game/:gamePin/play', requireSessionWithHandle, async (req, res) => {
+  const gamePin = req.params.gamePin;
+  if (!isValidGamePin(gamePin)) {
+    res.status(404).type('text/plain').send('Not Found');
+    return;
+  }
+  const room = await getGameRoom(gamePin);
+  if (!room) {
+    res.status(404).type('text/plain').send('Not Found');
+    return;
+  }
+  if (room.status === 'WAITING') {
+    res.redirect(302, `/join?game=${gamePin}`);
+    return;
+  }
+  if (!room.players.some((player) => player.userId === req.session.uid)) {
+    res.status(403).type('text/plain').send('Forbidden');
+    return;
+  }
+  const state = await getGameplayQuestionJson({
+    gamePin,
+    userId: req.session.uid,
+    now: Date.now(),
+  });
+  if (state?.forbidden) {
+    res.status(403).type('text/plain').send('Forbidden');
+    return;
+  }
+  res.type('html').send(
+    renderGameplayPage({
+      session: { ...req.session, handle: req.resolvedHandle },
+      room,
+      state,
+    }),
+  );
+});
+
+async function handleGameplayQuestionApi(req, res) {
+  const gamePin = req.params.gamePin || req.params.pin;
+  if (!isValidGamePin(gamePin)) {
+    res.status(400).json({ error: 'invalid game pin' });
+    return;
+  }
+  if (!req.session?.uid) {
+    res.status(401).json({ error: 'unauthorized' });
+    return;
+  }
+  const payload = await getGameplayQuestionJson({
+    gamePin,
+    userId: req.session.uid,
+    now: Date.now(),
+  });
+  if (payload?.forbidden) {
+    res.status(403).json({ error: 'forbidden' });
+    return;
+  }
+  if (!payload) {
+    res.status(404).json({ error: 'game not found' });
+    return;
+  }
+  res.json(payload);
+}
+
+app.get('/api/games/:gamePin/question', requireSessionApi, handleGameplayQuestionApi);
+app.get('/api/rooms/:pin/question', requireSessionApi, handleGameplayQuestionApi);
+
+async function handleSubmitAnswerApi(req, res) {
+  const gamePin = req.params.gamePin || req.params.pin;
+  if (!isValidGamePin(gamePin)) {
+    res.status(400).json({ error: 'invalid game pin' });
+    return;
+  }
+  const selectedAnswerId = typeof req.body?.selectedAnswerId === 'string'
+    ? req.body.selectedAnswerId.trim()
+    : '';
+  const result = await submitGameAnswer({
+    gamePin,
+    userId: req.session.uid,
+    selectedAnswerId,
+    now: Date.now(),
+    clientLatencyMs: req.body?.latencyMs,
+  });
+  if (!result.ok) {
+    const status = result.reason === 'already_answered' ? 409 : result.reason === 'not_player' ? 403 : 400;
+    res.status(status).json({ ok: false, reason: result.reason });
+    return;
+  }
+  res.json(result);
+}
+
+app.post('/api/games/:gamePin/answers', requireSessionWithHandle, handleSubmitAnswerApi);
+app.post('/api/rooms/:pin/answers', requireSessionWithHandle, handleSubmitAnswerApi);
+
+async function handleAdvanceApi(req, res) {
+  const gamePin = req.params.gamePin || req.params.pin;
+  if (!isValidGamePin(gamePin)) {
+    res.status(400).json({ error: 'invalid game pin' });
+    return;
+  }
+  const result = await advanceGameQuestion({
+    gamePin,
+    now: Date.now(),
+    hostUserId: req.session.uid,
+  });
+  if (!result.ok && result.reason === 'forbidden') {
+    res.status(403).json(result);
+    return;
+  }
+  if (!result.ok && result.reason === 'not_active') {
+    res.status(400).json(result);
+    return;
+  }
+  res.json(result);
+}
+
+app.post('/api/games/:gamePin/advance', requireSessionWithHandle, handleAdvanceApi);
+app.post('/api/rooms/:pin/advance', requireSessionWithHandle, handleAdvanceApi);
 
 async function handleCreateGameApi(req, res) {
   try {
@@ -389,14 +521,55 @@ app.get('/join', requireSessionWithHandle, async (req, res) => {
     res.status(400).type('text/plain').send('Invalid game PIN');
     return;
   }
+  const existingRoom = await getGameRoom(gamePin);
+  if (!existingRoom) {
+    res.status(404).type('html').send(
+      renderJoinUnavailablePage({
+        session: { ...req.session, handle: req.resolvedHandle },
+        gamePin,
+      }),
+    );
+    return;
+  }
+  if (existingRoom.status === 'COMPLETED') {
+    res.status(410).type('html').send(
+      renderJoinUnavailablePage({
+        session: { ...req.session, handle: req.resolvedHandle },
+        gamePin,
+      }),
+    );
+    return;
+  }
+  if (existingRoom.status === 'ACTIVE') {
+    const joinLive = await joinActiveGame({
+      gamePin,
+      userId: req.session.uid,
+      handle: req.resolvedHandle,
+    });
+    if (!joinLive.ok) {
+      res.status(400).type('html').send(
+        renderJoinUnavailablePage({
+          session: { ...req.session, handle: req.resolvedHandle },
+          gamePin,
+        }),
+      );
+      return;
+    }
+    res.redirect(302, `/game/${gamePin}/play`);
+    return;
+  }
   const result = await joinWaitingGame({
     gamePin,
     userId: req.session.uid,
     handle: req.resolvedHandle,
   });
   if (!result.ok) {
-    const status = result.reason === 'not_found' ? 404 : 400;
-    res.status(status).type('text/plain').send('Unable to join game');
+    res.status(400).type('html').send(
+      renderJoinUnavailablePage({
+        session: { ...req.session, handle: req.resolvedHandle },
+        gamePin,
+      }),
+    );
     return;
   }
   res.type('html').send(

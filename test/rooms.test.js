@@ -191,7 +191,7 @@ test('dashboard CREATE NEW GAME submits POST /game and includes match modal shel
   assert.match(html, /dashboard-match-modal\.js/);
 });
 
-test('POST /game/:gamePin/launch saves selected packs and zero-pack shows inline alert', async () => {
+test('POST /game/:gamePin/launch deals deck and zero-pack shows inline alert', async () => {
   resetGameRoomsForTest();
   resetUserProfilesForTest();
   const cookie = signSessionCookie({
@@ -211,18 +211,26 @@ test('POST /game/:gamePin/launch saves selected packs and zero-pack shows inline
     { topicPackIds: ['pop_culture_01', 'science_tech_01'] },
     cookie,
   );
-  assert.equal(launchRes.status, 302);
-  assert.match(launchRes.headers.location || '', /\?saved=1$/);
+  assert.equal(launchRes.status, 303);
+  assert.match(launchRes.headers.location || '', new RegExp(`/game/${gamePin}/play$`));
+  const activeRoom = await require('../db').getGameRoom(gamePin);
+  assert.equal(activeRoom.status, 'ACTIVE');
+  assert.equal(activeRoom.questionCount, 20);
+  assert.equal(activeRoom.dealQuestions.length, 20);
 
-  const emptyRes = await formRequest('POST', `/game/${gamePin}/launch`, {}, cookie);
+  const createEmptyRes = await request('POST', '/game', { cookie });
+  const emptyPin = (createEmptyRes.headers.location || '').split('/').pop();
+  const emptyRes = await formRequest('POST', `/game/${emptyPin}/launch`, {}, cookie);
   assert.equal(emptyRes.status, 200);
   assert.match(emptyRes.body, /role="alert"/i);
   assert.match(emptyRes.body, /Select at least one topic pack/i);
   assert.ok(!emptyRes.body.includes('Invalid pack selection'));
 
+  const createInvalidRes = await request('POST', '/game', { cookie });
+  const invalidPin = (createInvalidRes.headers.location || '').split('/').pop();
   const invalidRes = await formRequest(
     'POST',
-    `/game/${gamePin}/launch`,
+    `/game/${invalidPin}/launch`,
     { topicPackIds: ['not-valid!!'] },
     cookie,
   );
@@ -308,8 +316,7 @@ test('host lobby places launch CTA between invite block and player grid', () => 
           title: 'Pop Culture',
           category: 'Film',
           icon: 'movie',
-          totalQuestions: 6,
-          difficultyRating: 'BALANCED',
+          totalQuestions: 10,
           isFeatured: true,
         },
       ],
@@ -353,8 +360,7 @@ test('lobby HTML escapes handles and pack titles with HTML characters', () => {
           title: '<b>Evil</b>',
           category: 'Test',
           icon: 'quiz',
-          totalQuestions: 6,
-          difficultyRating: 'FUN',
+          totalQuestions: 10,
           isFeatured: false,
         },
       ],

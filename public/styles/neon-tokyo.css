@@ -639,7 +639,8 @@
   background: transparent !important;
 }
 
-.pq-auth-card .pq-auth-alert {
+.pq-auth-card .pq-auth-alert,
+.pq-gameplay-alert.pq-auth-alert {
   font-family: "Inter", sans-serif;
   font-size: 0.875rem;
   line-height: 1.625;
@@ -647,14 +648,16 @@
   padding: 0.875rem 1rem;
 }
 
-.pq-auth-card .pq-auth-alert-error {
+.pq-auth-card .pq-auth-alert-error,
+.pq-gameplay-alert.pq-auth-alert-error {
   background: rgba(45, 12, 16, 0.92);
   border: 1px solid #ff3b30;
   box-shadow: 0 0 16px rgba(255, 59, 48, 0.35);
   color: #f0f0f8;
 }
 
-.pq-auth-card .pq-auth-alert-success {
+.pq-auth-card .pq-auth-alert-success,
+.pq-gameplay-alert.pq-auth-alert-success {
   background: rgba(0, 77, 61, 0.35);
   border: 1px solid #00ffcc;
   box-shadow: 0 0 16px rgba(0, 255, 204, 0.25);

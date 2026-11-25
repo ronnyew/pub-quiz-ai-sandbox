@@ -1,7 +1,6 @@
 const PACK_ID = /^[a-z0-9]+(?:_[a-z0-9]+)*$/;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const OPTION_ID = /^[A-D]$/;
-const QUESTION_DIFFICULTY = new Set(['EASY', 'MEDIUM', 'HARD']);
 const MAX_PACK_LIMIT = 24;
 const MAX_QUESTION_READ = 500;
 
@@ -10,6 +9,7 @@ const path = require('node:path');
 
 const USERS_FILE = path.join(__dirname, '.data', 'users.json');
 const GAME_ROOMS_FILE = path.join(__dirname, '.data', 'game_rooms.json');
+const GAME_ROOM_SECRETS_FILE = path.join(__dirname, '.data', 'game_room_secrets.json');
 const USER_UID = /^[A-Za-z0-9_-]{1,128}$/;
 
 const ROOM_ID = /^\d{6}$/;
@@ -19,10 +19,12 @@ const memory = {
   questions: new Map(),
   users: new Map(),
   gameRooms: new Map(),
+  gameRoomSecrets: new Map(),
 };
 
 let usersHydratedFromDisk = false;
 let gameRoomsHydratedFromDisk = false;
+let gameRoomSecretsHydratedFromDisk = false;
 let firestoreClient = null;
 let firestoreClientOverride = null;
 let gameRoomPersistenceOverride = null;
@@ -117,7 +119,6 @@ function toPublicPack(pack) {
     category: pack.category,
     icon: pack.icon,
     totalQuestions: pack.totalQuestions,
-    difficultyRating: pack.difficultyRating,
     isFeatured: pack.isFeatured,
   };
 }
@@ -152,9 +153,6 @@ function validatePack(pack) {
   if (typeof pack.icon !== 'string' || !/^[a-z0-9_]+$/.test(pack.icon)) {
     throw new TypeError('invalid pack icon');
   }
-  if (typeof pack.difficultyRating !== 'string' || pack.difficultyRating.trim() === '') {
-    throw new TypeError('invalid pack difficultyRating');
-  }
   if (typeof pack.isFeatured !== 'boolean') throw new TypeError('invalid isFeatured');
 }
 
@@ -168,12 +166,6 @@ function validateQuestion(question) {
   }
   if (typeof question.category !== 'string' || question.category.trim() === '') {
     throw new TypeError('invalid question category');
-  }
-  if (!Array.isArray(question.tags) || question.tags.some((tag) => typeof tag !== 'string')) {
-    throw new TypeError('invalid question tags');
-  }
-  if (!QUESTION_DIFFICULTY.has(question.difficultyRating)) {
-    throw new TypeError('invalid question difficultyRating');
   }
   if (!Number.isInteger(question.basePoints) || question.basePoints < 1) {
     throw new TypeError('invalid basePoints');
@@ -280,11 +272,18 @@ function gameRoomsCollection() {
   return getFirestoreClient().collection('game_rooms');
 }
 
+function gameRoomSecretsCollection() {
+  return getFirestoreClient().collection('game_room_secrets');
+}
+
 function withRoomUpdateLock(roomId, fn) {
   const previous = roomUpdateChains.get(roomId) || Promise.resolve();
   const next = previous
     .catch(() => {})
-    .then(fn);
+    .then(fn)
+    .catch((err) => {
+      throw err;
+    });
   roomUpdateChains.set(
     roomId,
     next.finally(() => {
@@ -396,6 +395,52 @@ function assertRoomId(roomId) {
   }
 }
 
+function sanitizePublicDealQuestion(question) {
+  if (!question || typeof question !== 'object') throw new TypeError('invalid deal question');
+  if (typeof question.questionId !== 'string' || question.questionId.trim() === '') {
+    throw new TypeError('invalid deal questionId');
+  }
+  if (typeof question.questionText !== 'string' || question.questionText.trim() === '') {
+    throw new TypeError('invalid deal questionText');
+  }
+  if (!Array.isArray(question.options) || question.options.length !== 4) {
+    throw new TypeError('invalid deal options');
+  }
+  for (const option of question.options) {
+    if (!option || typeof option.id !== 'string' || !OPTION_ID.test(option.id)) {
+      throw new TypeError('invalid deal option id');
+    }
+    if (typeof option.text !== 'string' || option.text.trim() === '') {
+      throw new TypeError('invalid deal option text');
+    }
+  }
+  return {
+    questionId: question.questionId,
+    questionText: question.questionText,
+    options: question.options.map((option) => ({ id: option.id, text: option.text })),
+  };
+}
+
+function sanitizeScores(scores) {
+  if (scores === undefined || scores === null) {
+    return {};
+  }
+  if (!scores || typeof scores !== 'object' || Array.isArray(scores)) {
+    throw new TypeError('invalid scores');
+  }
+  const next = {};
+  for (const [userId, value] of Object.entries(scores)) {
+    if (typeof userId !== 'string' || userId.trim() === '') {
+      throw new TypeError('invalid score userId');
+    }
+    if (!Number.isInteger(value) || value < 0) {
+      throw new TypeError('invalid score value');
+    }
+    next[userId] = value;
+  }
+  return next;
+}
+
 function validateGameRoom(room) {
   if (!room || typeof room !== 'object') throw new TypeError('invalid room');
   assertRoomId(room.roomId);
@@ -431,6 +476,99 @@ function validateGameRoom(room) {
   if (typeof room.createdAt !== 'string' || room.createdAt.trim() === '') {
     throw new TypeError('invalid createdAt');
   }
+  if (room.status === 'ACTIVE' || room.status === 'COMPLETED') {
+    if (!Array.isArray(room.dealQuestions) || room.dealQuestions.length !== room.questionCount) {
+      throw new TypeError('invalid dealQuestions');
+    }
+    for (const question of room.dealQuestions) {
+      sanitizePublicDealQuestion(question);
+    }
+    sanitizeScores(room.scores);
+  } else if (room.dealQuestions !== undefined && room.dealQuestions !== null) {
+    throw new TypeError('dealQuestions only allowed when game is ACTIVE or COMPLETED');
+  }
+}
+
+function validateGameRoomSecrets(record) {
+  if (!record || typeof record !== 'object') throw new TypeError('invalid secrets');
+  assertRoomId(record.roomId);
+  if (!Array.isArray(record.secretQuestions) || record.secretQuestions.length < 1) {
+    throw new TypeError('invalid secretQuestions');
+  }
+  for (const question of record.secretQuestions) {
+    if (!question || typeof question.questionId !== 'string' || question.questionId.trim() === '') {
+      throw new TypeError('invalid secret questionId');
+    }
+    if (typeof question.correctAnswerId !== 'string' || !OPTION_ID.test(question.correctAnswerId)) {
+      throw new TypeError('invalid secret correctAnswerId');
+    }
+    if (!Number.isInteger(question.basePoints) || question.basePoints < 1) {
+      throw new TypeError('invalid secret basePoints');
+    }
+    if (typeof question.explanation !== 'string' || question.explanation.trim() === '') {
+      throw new TypeError('invalid secret explanation');
+    }
+    if (!Array.isArray(question.sourceCitations) || question.sourceCitations.length < 1) {
+      throw new TypeError('invalid secret sourceCitations');
+    }
+    for (const citation of question.sourceCitations) {
+      if (!citation || typeof citation.title !== 'string' || citation.title.trim() === '') {
+        throw new TypeError('invalid citation title');
+      }
+      if (typeof citation.link !== 'string' || !/^https:\/\/[^\s]+$/.test(citation.link)) {
+        throw new TypeError('citation link must be https');
+      }
+    }
+  }
+  if (!Number.isInteger(record.currentQuestionIndex) || record.currentQuestionIndex < 0) {
+    throw new TypeError('invalid secrets currentQuestionIndex');
+  }
+  if (!Number.isFinite(record.openedAt) || !Number.isFinite(record.closesAt)) {
+    throw new TypeError('invalid question window');
+  }
+  if (record.closesAt < record.openedAt) {
+    throw new TypeError('invalid question window order');
+  }
+  if (!Number.isInteger(record.advancedThroughIndex) || record.advancedThroughIndex < -1) {
+    throw new TypeError('invalid advancedThroughIndex');
+  }
+  if (!Array.isArray(record.responses)) {
+    throw new TypeError('invalid responses');
+  }
+  for (const response of record.responses) {
+    validatePlayerResponse(response);
+  }
+}
+
+function validatePlayerResponse(response) {
+  if (!response || typeof response !== 'object') throw new TypeError('invalid response');
+  if (typeof response.responseId !== 'string' || response.responseId.trim() === '') {
+    throw new TypeError('invalid responseId');
+  }
+  if (typeof response.questionId !== 'string' || response.questionId.trim() === '') {
+    throw new TypeError('invalid response questionId');
+  }
+  if (typeof response.userId !== 'string' || response.userId.trim() === '') {
+    throw new TypeError('invalid response userId');
+  }
+  if (typeof response.selectedAnswerId !== 'string' || !OPTION_ID.test(response.selectedAnswerId)) {
+    throw new TypeError('invalid selectedAnswerId');
+  }
+  if (typeof response.isCorrect !== 'boolean') throw new TypeError('invalid isCorrect');
+  if (!Number.isInteger(response.latencyMs) || response.latencyMs < 0) {
+    throw new TypeError('invalid latencyMs');
+  }
+  if (!Number.isInteger(response.pointsAwarded) || response.pointsAwarded < 0) {
+    throw new TypeError('invalid pointsAwarded');
+  }
+  if (!Number.isFinite(response.timestamp)) {
+    throw new TypeError('invalid response timestamp');
+  }
+}
+
+function sanitizeGameRoomSecretsForStorage(record) {
+  validateGameRoomSecrets(record);
+  return structuredClone(record);
 }
 
 function sanitizeGameRoomForStorage(room) {
@@ -444,6 +582,12 @@ function sanitizeGameRoomForStorage(room) {
   delete clone.secrets;
   delete clone.email;
   delete clone.phone;
+  if (Array.isArray(clone.dealQuestions)) {
+    clone.dealQuestions = clone.dealQuestions.map((question) => sanitizePublicDealQuestion(question));
+  }
+  if (clone.scores !== undefined) {
+    clone.scores = sanitizeScores(clone.scores);
+  }
   if (Array.isArray(clone.players)) {
     clone.players = clone.players.map((player) => {
       const { userId, handle } = player;
@@ -573,12 +717,277 @@ async function updateGameRoom(roomId, updater) {
   });
 }
 
+function ensureGameRoomSecretsHydrated() {
+  if (process.env.NODE_ENV === 'test' || gameRoomSecretsHydratedFromDisk || !shouldUseLocalGameRoomDisk()) {
+    return;
+  }
+  gameRoomSecretsHydratedFromDisk = true;
+  try {
+    const raw = fs.readFileSync(GAME_ROOM_SECRETS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return;
+    for (const [roomId, record] of Object.entries(parsed)) {
+      if (!ROOM_ID.test(roomId)) continue;
+      try {
+        memory.gameRoomSecrets.set(roomId, sanitizeGameRoomSecretsForStorage({ ...record, roomId }));
+      } catch {
+        /* skip invalid persisted secrets */
+      }
+    }
+  } catch (err) {
+    if (err && err.code !== 'ENOENT') throw err;
+  }
+}
+
+function persistGameRoomSecretsToDisk() {
+  if (process.env.NODE_ENV === 'test' || !shouldUseLocalGameRoomDisk()) return;
+  const payload = Object.fromEntries(memory.gameRoomSecrets.entries());
+  fs.mkdirSync(path.dirname(GAME_ROOM_SECRETS_FILE), { recursive: true });
+  fs.writeFileSync(GAME_ROOM_SECRETS_FILE, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+}
+
+function loadGameRoomSecretsFromMemory(roomId) {
+  ensureGameRoomSecretsHydrated();
+  const record = memory.gameRoomSecrets.get(roomId);
+  return record ? structuredClone(record) : null;
+}
+
+function writeGameRoomSecretsToMemory(record) {
+  ensureGameRoomSecretsHydrated();
+  memory.gameRoomSecrets.set(record.roomId, record);
+  persistGameRoomSecretsToDisk();
+}
+
+async function getGameRoomSecrets(roomId) {
+  assertRoomId(roomId);
+  if (gameRoomsUseFirestore()) {
+    const snap = await gameRoomSecretsCollection().doc(roomId).get();
+    if (!snap.exists) return null;
+    try {
+      return sanitizeGameRoomSecretsForStorage({ ...snap.data(), roomId });
+    } catch {
+      return null;
+    }
+  }
+  return loadGameRoomSecretsFromMemory(roomId);
+}
+
+async function createGameRoomSecrets(record) {
+  const next = sanitizeGameRoomSecretsForStorage(record);
+  if (gameRoomsUseFirestore()) {
+    const ref = gameRoomSecretsCollection().doc(next.roomId);
+    try {
+      await ref.create(next);
+    } catch (err) {
+      if (err && (err.code === 6 || err.code === 'already-exists')) {
+        throw new Error('secrets already exist');
+      }
+      throw err;
+    }
+    return structuredClone(next);
+  }
+  if (memory.gameRoomSecrets.has(next.roomId)) {
+    throw new Error('secrets already exist');
+  }
+  writeGameRoomSecretsToMemory(next);
+  return structuredClone(next);
+}
+
+async function updateGameRoomSecrets(roomId, updater) {
+  assertRoomId(roomId);
+  if (gameRoomsUseFirestore()) {
+    return getFirestoreClient().runTransaction(async (transaction) => {
+      const ref = gameRoomSecretsCollection().doc(roomId);
+      const snap = await transaction.get(ref);
+      if (!snap.exists) {
+        throw new Error('secrets not found');
+      }
+      const existing = sanitizeGameRoomSecretsForStorage({ ...snap.data(), roomId });
+      const next = typeof updater === 'function' ? updater(structuredClone(existing)) : updater;
+      const record = sanitizeGameRoomSecretsForStorage(next);
+      if (record.roomId !== roomId) {
+        throw new TypeError('roomId mismatch on secrets update');
+      }
+      transaction.set(ref, record);
+      return structuredClone(record);
+    });
+  }
+  return withRoomUpdateLock(roomId, async () => {
+    const existing = loadGameRoomSecretsFromMemory(roomId);
+    if (!existing) {
+      throw new Error('secrets not found');
+    }
+    const next = typeof updater === 'function' ? updater(structuredClone(existing)) : updater;
+    const record = sanitizeGameRoomSecretsForStorage(next);
+    if (record.roomId !== roomId) {
+      throw new TypeError('roomId mismatch on secrets update');
+    }
+    writeGameRoomSecretsToMemory(record);
+    return structuredClone(record);
+  });
+}
+
+function launchScoresForPlayers(players) {
+  const scores = {};
+  for (const player of players || []) {
+    scores[player.userId] = 0;
+  }
+  return scores;
+}
+
+function mergeLaunchRoomWithWaitingSnapshot(launchDraft, waitingSnapshot) {
+  const players = waitingSnapshot.players.map((player) => ({
+    userId: player.userId,
+    handle: player.handle,
+  }));
+  return sanitizeGameRoomForStorage({
+    ...launchDraft,
+    players,
+    scores: launchScoresForPlayers(players),
+  });
+}
+
+async function runGameRoomLaunchTransaction(roomId, { nextRoom, nextSecrets }) {
+  assertRoomId(roomId);
+  const launchDraft = sanitizeGameRoomForStorage(nextRoom);
+  const secretRecord = sanitizeGameRoomSecretsForStorage(nextSecrets);
+  if (launchDraft.roomId !== roomId || secretRecord.roomId !== roomId) {
+    throw new TypeError('roomId mismatch on launch');
+  }
+  if (gameRoomsUseFirestore()) {
+    return getFirestoreClient().runTransaction(async (transaction) => {
+      const roomRef = gameRoomsCollection().doc(roomId);
+      const secretRef = gameRoomSecretsCollection().doc(roomId);
+      const roomSnap = await transaction.get(roomRef);
+      const secretSnap = await transaction.get(secretRef);
+      if (!roomSnap.exists) {
+        throw new Error('room not found');
+      }
+      if (secretSnap.exists) {
+        throw new Error('secrets already exist');
+      }
+      const existing = sanitizeGameRoomForStorage({ ...roomSnap.data(), roomId });
+      if (existing.status !== 'WAITING') {
+        throw new Error('not_waiting');
+      }
+      const roomRecord = mergeLaunchRoomWithWaitingSnapshot(launchDraft, existing);
+      transaction.set(roomRef, roomRecord);
+      transaction.set(secretRef, secretRecord);
+      return {
+        room: structuredClone(roomRecord),
+        secrets: structuredClone(secretRecord),
+      };
+    });
+  }
+  return withRoomUpdateLock(roomId, async () => {
+    const existing = loadGameRoomFromMemory(roomId);
+    if (!existing) {
+      throw new Error('room not found');
+    }
+    if (memory.gameRoomSecrets.has(roomId)) {
+      throw new Error('secrets already exist');
+    }
+    if (existing.status !== 'WAITING') {
+      throw new Error('not_waiting');
+    }
+    const priorWaiting = structuredClone(existing);
+    const roomRecord = mergeLaunchRoomWithWaitingSnapshot(launchDraft, existing);
+    let roomWritten = false;
+    try {
+      writeGameRoomToMemory(roomRecord);
+      roomWritten = true;
+      writeGameRoomSecretsToMemory(secretRecord);
+      return {
+        room: structuredClone(roomRecord),
+        secrets: structuredClone(secretRecord),
+      };
+    } catch (err) {
+      if (roomWritten) {
+        writeGameRoomToMemory(sanitizeGameRoomForStorage(priorWaiting));
+      } else {
+        memory.gameRooms.delete(roomId);
+      }
+      memory.gameRoomSecrets.delete(roomId);
+      throw err;
+    }
+  });
+}
+
+async function runGameRoomBundleTransaction(roomId, updater) {
+  assertRoomId(roomId);
+  if (gameRoomsUseFirestore()) {
+    return getFirestoreClient().runTransaction(async (transaction) => {
+      const roomRef = gameRoomsCollection().doc(roomId);
+      const secretRef = gameRoomSecretsCollection().doc(roomId);
+      const roomSnap = await transaction.get(roomRef);
+      const secretSnap = await transaction.get(secretRef);
+      if (!roomSnap.exists) {
+        throw new Error('room not found');
+      }
+      if (!secretSnap.exists) {
+        throw new Error('secrets not found');
+      }
+      const bundle = {
+        room: sanitizeGameRoomForStorage({ ...roomSnap.data(), roomId }),
+        secrets: sanitizeGameRoomSecretsForStorage({ ...secretSnap.data(), roomId }),
+      };
+      const result = await updater(structuredClone(bundle));
+      const nextRoom = sanitizeGameRoomForStorage(result.room);
+      const nextSecrets = sanitizeGameRoomSecretsForStorage(result.secrets);
+      if (nextRoom.roomId !== roomId || nextSecrets.roomId !== roomId) {
+        throw new TypeError('roomId mismatch on bundle update');
+      }
+      transaction.set(roomRef, nextRoom);
+      transaction.set(secretRef, nextSecrets);
+      return {
+        room: structuredClone(nextRoom),
+        secrets: structuredClone(nextSecrets),
+        meta: result.meta || null,
+      };
+    });
+  }
+  return withRoomUpdateLock(roomId, async () => {
+    const room = loadGameRoomFromMemory(roomId);
+    const secrets = loadGameRoomSecretsFromMemory(roomId);
+    if (!room) {
+      throw new Error('room not found');
+    }
+    if (!secrets) {
+      throw new Error('secrets not found');
+    }
+    const result = await updater({
+      room: structuredClone(room),
+      secrets: structuredClone(secrets),
+    });
+    const nextRoom = sanitizeGameRoomForStorage(result.room);
+    const nextSecrets = sanitizeGameRoomSecretsForStorage(result.secrets);
+    if (nextRoom.roomId !== roomId || nextSecrets.roomId !== roomId) {
+      throw new TypeError('roomId mismatch on bundle update');
+    }
+    writeGameRoomToMemory(nextRoom);
+    writeGameRoomSecretsToMemory(nextSecrets);
+    return {
+      room: structuredClone(nextRoom),
+      secrets: structuredClone(nextSecrets),
+      meta: result.meta || null,
+    };
+  });
+}
+
 function resetGameRoomsForTest() {
   if (process.env.NODE_ENV !== 'test') {
     throw new Error('resetGameRoomsForTest is only available in test');
   }
   memory.gameRooms.clear();
+  memory.gameRoomSecrets.clear();
   resetGameRoomTestHooks();
+}
+
+function resetGameRoomSecretsForTest() {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('resetGameRoomSecretsForTest is only available in test');
+  }
+  memory.gameRoomSecrets.clear();
 }
 
 module.exports = {
@@ -594,6 +1003,12 @@ module.exports = {
   getGameRoom,
   updateGameRoom,
   resetGameRoomsForTest,
+  resetGameRoomSecretsForTest,
+  getGameRoomSecrets,
+  createGameRoomSecrets,
+  updateGameRoomSecrets,
+  runGameRoomBundleTransaction,
+  runGameRoomLaunchTransaction,
   setFirestoreClientForTest,
   setGameRoomPersistenceForTest,
   shouldUseFirestore,
