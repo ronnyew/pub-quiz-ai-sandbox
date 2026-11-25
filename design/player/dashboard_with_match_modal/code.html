@@ -342,7 +342,18 @@
           } else if (outcomeType === '2nd') {
             modalBadgeContainer.innerHTML = '<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-secondary/15 text-secondary border border-secondary/50 rounded-md font-label text-xs font-bold uppercase shadow-[0_0_10px_rgba(0,255,204,0.25)]"><span class="material-symbols-outlined text-sm">military_tech</span> 2ND PLACE</span>';
           } else {
-            modalBadgeContainer.innerHTML = '<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container-highest text-on-surface border border-outline rounded-md font-label text-xs font-bold uppercase"><span class="material-symbols-outlined text-sm text-secondary">verified</span> ' + outcome + '</span>';
+            modalBadgeContainer.replaceChildren();
+            const badge = document.createElement('span');
+            badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container-highest text-on-surface border border-outline rounded-md font-label text-xs font-bold uppercase';
+            const icon = document.createElement('span');
+            icon.className = 'material-symbols-outlined text-sm text-secondary';
+            icon.textContent = 'verified';
+            badge.appendChild(icon);
+            const label = document.createElement('span');
+            label.textContent = outcome;
+            badge.appendChild(document.createTextNode(' '));
+            badge.appendChild(label);
+            modalBadgeContainer.appendChild(badge);
           }
         }
 

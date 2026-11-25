@@ -317,3 +317,15 @@
 1. **What changed.** Minimal `firebase.json` points at `firestore.indexes.json`. `.github/workflows/deploy.yml` runs `npx firebase-tools deploy --only firestore:indexes` after GCP auth and before Cloud Run image build. CLAUDE.md and workflow comments document `roles/datastore.indexAdmin` (or `roles/firebase.admin`) on `github-deployer@`.
 2. **Why.** Dashboard bounded queries need the composite index in production; syncing on every main deploy keeps GCP in step with repo definitions.
 3. **Security and cost.** Index deploy uses existing Workload Identity credentials; no new secrets. One-time index builds may lag deploy—`listGameRoomsForUser` already falls back to `[]` while indexes build.
+
+## 2026-11-26 — CodeQL hardening (auth taint, rate limit, ReDoS, DOM-XSS)
+
+1. **What changed.** Renamed `resolveEmailCredentialProvider` (Firebase email credential metadata only; no raw secrets). Session/join MAC helpers consolidated in `computeSessionIntegrityMac`. In-memory sliding-window rate limiter (`lib/rate-limit.js`, 120/min per IP) on `/api/auth`, `/api/handle`, `/onboarding/handle`, and `/api/games|rooms/*` (skipped in test). `stripTrailingSlashes` replaces trailing-slash regex in `lib/rooms.js`. Design Stitch mocks use safe DOM APIs for dynamic badge/chip text; auth-identity test uses strict provider equality.
+2. **Why.** Satisfy CodeQL alerts without changing product auth (still HMAC session cookies, provider gate unchanged).
+3. **Security and cost.** Bounded rate-limit map (10k keys, periodic cleanup); no new dependencies. `setInterval` only when not in test and limiter runs in production.
+
+## 2026-11-26 — Rate limit: trust proxy, per-user keys, read/write tiers
+
+1. **What changed.** `app.set('trust proxy', 1)`; session binds `req.user.uid` for limiter keying (`user:` prefix). Game APIs use separate buckets: GET/HEAD 300/min, mutations 60/min; other sensitive routes stay 120/min. Keys use `req.ip` only when unsigned (no `X-Forwarded-For` parsing). Tests pass `enabled: true` to exercise buckets in `NODE_ENV=test`.
+2. **Why.** Pub Wi-Fi players share one NAT IP but must not share one quota; Cloud Run must not trust client-spoofed forwarded headers.
+3. **Security and cost.** In-memory tiers only; still no polling loops. Unauthenticated abuse still capped per trust-proxy IP.

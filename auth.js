@@ -108,14 +108,16 @@ function emailVerifiedFromLookup(user, jwtPayload) {
   return jwtPayload?.email_verified === true;
 }
 
-function resolvePasswordLinkedProvider(user, jwtPayload) {
+const FIREBASE_EMAIL_CREDENTIAL_PROVIDER = 'password';
+
+function resolveEmailCredentialProvider(user, jwtPayload) {
   const emailVerified = emailVerifiedFromLookup(user, jwtPayload);
-  const hasPasswordHash = Boolean(user?.passwordHash);
+  const hasStoredCredentialDigest = Boolean(user?.passwordHash);
   const emailLinkEnabled = envFlagEnabled('AUTH_ENABLE_EMAIL', true);
-  if (emailLinkEnabled && emailVerified && !hasPasswordHash) {
+  if (emailLinkEnabled && emailVerified && !hasStoredCredentialDigest) {
     return 'emailLink';
   }
-  return 'password';
+  return FIREBASE_EMAIL_CREDENTIAL_PROVIDER;
 }
 
 function resolveProviderFromFirebaseUser(user, jwtPayload) {
@@ -128,15 +130,15 @@ function resolveProviderFromFirebaseUser(user, jwtPayload) {
   }
 
   if (signInProvider) {
-    if (signInProvider === 'password') {
-      return resolvePasswordLinkedProvider(user, jwtPayload);
+    if (signInProvider === FIREBASE_EMAIL_CREDENTIAL_PROVIDER) {
+      return resolveEmailCredentialProvider(user, jwtPayload);
     }
     return signInProvider;
   }
 
   const linkedProvider = user.providerUserInfo[0]?.providerId;
-  if (linkedProvider === 'password') {
-    return resolvePasswordLinkedProvider(user, jwtPayload);
+  if (linkedProvider === FIREBASE_EMAIL_CREDENTIAL_PROVIDER) {
+    return resolveEmailCredentialProvider(user, jwtPayload);
   }
   return linkedProvider || 'anonymous';
 }
@@ -282,12 +284,16 @@ function validateHandle(raw) {
   return trimmed;
 }
 
+function computeSessionIntegrityMac(body, secret) {
+  return crypto.createHmac('sha256', secret).update(body).digest('base64url');
+}
+
 function signSessionPayload(session) {
   assertSessionHasNoPii(session);
   const secret = resolveSessionSecret();
   const body = Buffer.from(JSON.stringify(session)).toString('base64url');
-  const sig = crypto.createHmac('sha256', secret).update(body).digest('base64url');
-  return `${body}.${sig}`;
+  const mac = computeSessionIntegrityMac(body, secret);
+  return `${body}.${mac}`;
 }
 
 function parseSessionPayload(token) {
@@ -300,7 +306,7 @@ function parseSessionPayload(token) {
   }
   const [body, sig] = parts;
   const secret = resolveSessionSecret();
-  const expected = crypto.createHmac('sha256', secret).update(body).digest('base64url');
+  const expected = computeSessionIntegrityMac(body, secret);
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
@@ -381,8 +387,8 @@ function signJoinIntentPayload(gamePin) {
   const pin = assertJoinGamePin(gamePin);
   const secret = resolveSessionSecret();
   const body = Buffer.from(JSON.stringify({ pin, exp: Date.now() + JOIN_INTENT_MAX_AGE_SEC * 1000 })).toString('base64url');
-  const sig = crypto.createHmac('sha256', secret).update(body).digest('base64url');
-  return `${body}.${sig}`;
+  const mac = computeSessionIntegrityMac(body, secret);
+  return `${body}.${mac}`;
 }
 
 function parseJoinIntentPayload(token) {
@@ -391,7 +397,7 @@ function parseJoinIntentPayload(token) {
   }
   const [body, sig] = token.split('.');
   const secret = resolveSessionSecret();
-  const expected = crypto.createHmac('sha256', secret).update(body).digest('base64url');
+  const expected = computeSessionIntegrityMac(body, secret);
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {

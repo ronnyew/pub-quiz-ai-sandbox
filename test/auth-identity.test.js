@@ -129,7 +129,10 @@ test('rejectForbiddenSignInProvider blocks anonymous and password', () => {
 test('AUTH_ENABLE_APPLE adds apple.com to provider gate list', () => {
   const saved = process.env.AUTH_ENABLE_APPLE;
   process.env.AUTH_ENABLE_APPLE = 'true';
-  assert.ok(getAuthProviders().includes('apple.com'));
+  const appleProviderId = 'apple.com';
+  assert.ok(
+    getAuthProviders().some((providerId) => providerId === appleProviderId),
+  );
   if (saved === undefined) {
     delete process.env.AUTH_ENABLE_APPLE;
   } else {

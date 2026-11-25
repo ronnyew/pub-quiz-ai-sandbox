@@ -231,7 +231,20 @@
       const container = document.getElementById('email-chips');
       const chip = document.createElement('div');
       chip.className = 'inline-flex items-center gap-2 px-3 py-1 bg-[#1e1e30] border border-secondary/40 rounded font-label text-xs font-semibold uppercase tracking-wide text-secondary shadow-[0_0_8px_rgba(0,255,204,0.15)]';
-      chip.innerHTML = `<span>${val}</span><button type="button" onclick="this.parentElement.remove()" class="hover:text-primary transition-colors flex items-center"><span class="material-symbols-outlined text-[16px]">close</span></button>`;
+      const label = document.createElement('span');
+      label.textContent = val;
+      chip.appendChild(label);
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'hover:text-primary transition-colors flex items-center';
+      closeBtn.addEventListener('click', function () {
+        chip.remove();
+      });
+      const closeIcon = document.createElement('span');
+      closeIcon.className = 'material-symbols-outlined text-[16px]';
+      closeIcon.textContent = 'close';
+      closeBtn.appendChild(closeIcon);
+      chip.appendChild(closeBtn);
       container.appendChild(chip);
       input.value = '';
       showToast('INVITE QUEUED', `Invite voucher reserved for ${val}`);

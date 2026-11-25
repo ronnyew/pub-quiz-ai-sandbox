@@ -36,6 +36,7 @@ const {
   submitGameAnswer,
 } = require('./lib/rooms');
 const { getGameRoom, getGameRoomSecrets, getUserProfile, listTopicPacks, saveUserProfile } = require('./db');
+const { createSensitiveRouteRateLimiter } = require('./lib/rate-limit');
 const {
   assertAuthProviderEnabled,
   attachSession,
@@ -59,10 +60,24 @@ const {
 const app = express();
 const port = process.env.PORT || 8080;
 
+app.set('trust proxy', 1);
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(attachSession);
+app.use((req, res, next) => {
+  if (req.session?.uid) {
+    req.user = { uid: req.session.uid };
+  }
+  next();
+});
+app.use(createSensitiveRouteRateLimiter({
+  defaultMax: 120,
+  readMax: 300,
+  writeMax: 60,
+  windowMs: 60_000,
+}));
 
 function requireSession(req, res, next) {
   if (!req.session?.uid) {
