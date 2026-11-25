@@ -1,7 +1,7 @@
 # Project Constitution & Engineering Rules
 
 ## Architecture & Guardrails
-- Stack: Node.js + Express, hosted on Google Cloud Run, database on Firestore.
+- Stack: Node.js + Express, hosted on Google Cloud Run, database on Firestore. Root `firestore.indexes.json` (wired via `firebase.json`) defines required composite indexes; `.github/workflows/deploy.yml` runs `firebase deploy --only firestore:indexes` on main after `google-github-actions/auth`. The deploy service account (`github-deployer@pub-quiz-ai-sandbox.iam.gserviceaccount.com`) must have `roles/datastore.indexAdmin` or `roles/firebase.admin`.
 - Player frontend: Tailwind CSS only, plus `public/styles/neon-tokyo.css` extracted from `design/player/*/code.html` (`.cyber-grid`, `.neon-glow-pink`, `.neon-glow-cyan`, Stitch color tokens, `Sora`, `Space Grotesk`, `Inter`). Do not add DaisyUI to the Neon Tokyo player UI.
 - Cost Control: Never introduce background polling loops or persistent WebSockets that prevent Cloud Run from scaling to zero.
 - **Bounded & Paginated Backend Queries:** All list/history functions must query the active datastore (Firestore when `shouldUseFirestore()` is true, and local/memory stores otherwise) using indexed filters and explicit `.limit()` pagination—never relying on RAM-only Maps in production or scanning entire collections unbounded.

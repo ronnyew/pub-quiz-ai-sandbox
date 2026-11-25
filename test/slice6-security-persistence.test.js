@@ -9,6 +9,7 @@ const db = require('../db');
 const {
   buildDashboardMatchSummaries,
   buildMatchBreakdown,
+  BreakdownNotCompleteError,
   buildPlayerSummariesForCompletedRoom,
   listRecentMatchesForUser,
 } = require('../lib/results');
@@ -224,7 +225,7 @@ test('breakdown API returns 409 while ACTIVE and full grading when COMPLETED', a
   assert.ok('metrics' in body);
 });
 
-test('buildMatchBreakdown omits grading fields when room is not COMPLETED', () => {
+test('buildMatchBreakdown throws BreakdownNotCompleteError for ACTIVE rooms', () => {
   const room = {
     roomId: '123456',
     hostUserId: 'host',
@@ -251,21 +252,12 @@ test('buildMatchBreakdown omits grading fields when room is not COMPLETED', () =
       explanation: 'E',
       sourceCitations: [{ title: 'S', link: 'https://example.com/a' }],
     }],
-    responses: [{
-      responseId: 'r1',
-      questionId: 'q-1',
-      userId: 'u1',
-      selectedAnswerId: 'A',
-      isCorrect: true,
-      latencyMs: 1000,
-      pointsAwarded: 100,
-      timestamp: 2,
-    }],
+    responses: [],
   };
-  const breakdown = buildMatchBreakdown({ room, secrets, userId: 'u1', page: 1 });
-  assert.equal(breakdown.entries[0].isCorrect, undefined);
-  assert.equal(breakdown.entries[0].pointsAwarded, undefined);
-  assert.equal(breakdown.entries[0].selectedAnswerId, undefined);
+  assert.throws(
+    () => buildMatchBreakdown({ room, secrets, userId: 'u1', page: 1 }),
+    BreakdownNotCompleteError,
+  );
 });
 
 test('listGameRoomsForUser returns only COMPLETED rooms by default', async () => {
@@ -302,6 +294,47 @@ test('listGameRoomsForUser returns only COMPLETED rooms by default', async () =>
   const matches = await listRecentMatchesForUser('viewer');
   assert.equal(matches.length, 1);
   assert.equal(matches[0].roomId, '222222');
+});
+
+function createMockFirestoreIndexFailure() {
+  const base = createMockFirestoreWithQueries();
+  const origCollection = base.collection.bind(base);
+  base.collection = function collection(name) {
+    const coll = origCollection(name);
+    if (name !== 'game_rooms') {
+      return coll;
+    }
+    return {
+      doc(id) {
+        return coll.doc(id);
+      },
+      where(field, op, value) {
+        const chain = coll.where(field, op, value);
+        const origGet = chain.get.bind(chain);
+        chain.get = async () => {
+          const err = new Error('9 FAILED_PRECONDITION: The query requires an index');
+          err.code = 9;
+          throw err;
+        };
+        return chain;
+      },
+    };
+  };
+  return base;
+}
+
+test('listGameRoomsForUser returns empty array on Firestore FAILED_PRECONDITION index error', async () => {
+  const previousBackend = process.env.DATA_BACKEND;
+  process.env.DATA_BACKEND = 'firestore';
+  db.resetGameRoomsForTest();
+  db.setFirestoreClientForTest(createMockFirestoreIndexFailure());
+  db.setGameRoomPersistenceForTest('firestore');
+  const rooms = await db.listGameRoomsForUser('viewer-fs', { limit: 10, status: 'COMPLETED' });
+  assert.deepEqual(rooms, []);
+  if (previousBackend === undefined) delete process.env.DATA_BACKEND;
+  else process.env.DATA_BACKEND = previousBackend;
+  db.resetGameRoomsForTest();
+  db.resetGameRoomTestHooks();
 });
 
 test('listGameRoomsForUser uses bounded Firestore query when DATA_BACKEND=firestore', async () => {

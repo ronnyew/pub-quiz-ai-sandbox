@@ -305,3 +305,15 @@
 1. **What changed.** Added `lib/results.js` for leaderboard ranking (score, then avg latency, then `userId`), per-player telemetry (XP, streak, accuracy), and paginated breakdown rows (5 per page). `GET /rooms/:pin/results` renders FR-10 game-over podium; `GET /rooms/:pin/breakdown` and `GET /api/games/:pin/breakdown` expose metrics and response logs with verified answers only when `status === COMPLETED`. Dashboard loads real match history via `listGameRoomsForUser` and opens the Tailwind breakdown overlay with API pagination. Gameplay redirects to results when complete.
 2. **Why.** Slice 6 completes post-game telemetry and replaces the dashboard demo row with stored matches while keeping answer keys in `game_room_secrets` until the room finishes.
 3. **Security and cost.** Breakdown APIs require room membership; `correctAnswerId`, `explanation`, and `sourceCitations` are omitted for non-`COMPLETED` rooms. No background jobs or new polling—dashboard modal fetches on demand.
+
+## 2026-11-26 — Firestore dashboard index, breakdown guard, index fallback
+
+1. **What changed.** Added root `firestore.indexes.json` for `game_rooms` (`playerIds` ARRAY_CONTAINS, `status` ASC, `createdAt` DESC). `listGameRoomsForUser` catches Firestore `FAILED_PRECONDITION` (missing/building index) and returns `[]` with a console warning instead of failing `GET /dashboard`. `buildMatchBreakdown` (`lib/results.js`) throws `BreakdownNotCompleteError` when the room is absent or not `COMPLETED`. Unit tests cover both behaviors.
+2. **Why.** Deployed Firestore needs an explicit composite index for bounded match history; dashboard must stay usable while the index provisions. Defense-in-depth so grading fields cannot be assembled for in-progress rooms if a caller skips route guards.
+3. **Security and cost.** Incomplete games never expose breakdown grading at the helper layer; index errors degrade to an empty history list (no 500 storm). No extra reads or polling.
+
+## 2026-11-26 — CI deploy syncs Firestore indexes
+
+1. **What changed.** Minimal `firebase.json` points at `firestore.indexes.json`. `.github/workflows/deploy.yml` runs `npx firebase-tools deploy --only firestore:indexes` after GCP auth and before Cloud Run image build. CLAUDE.md and workflow comments document `roles/datastore.indexAdmin` (or `roles/firebase.admin`) on `github-deployer@`.
+2. **Why.** Dashboard bounded queries need the composite index in production; syncing on every main deploy keeps GCP in step with repo definitions.
+3. **Security and cost.** Index deploy uses existing Workload Identity credentials; no new secrets. One-time index builds may lag deploy—`listGameRoomsForUser` already falls back to `[]` while indexes build.

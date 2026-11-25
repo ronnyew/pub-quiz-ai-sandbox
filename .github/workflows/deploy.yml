@@ -30,6 +30,8 @@ jobs:
     needs: security-scan
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    # GCP: github-deployer@pub-quiz-ai-sandbox.iam.gserviceaccount.com (Workload Identity via auth step).
+    # Must include roles/datastore.indexAdmin or roles/firebase.admin for Firestore index deploy below.
     steps:
       - uses: actions/checkout@v5
 
@@ -41,6 +43,13 @@ jobs:
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
+
+      # Uses GOOGLE_APPLICATION_CREDENTIALS from google-github-actions/auth (no extra secrets).
+      - name: Deploy Firestore composite indexes
+        run: |
+          npx --yes firebase-tools deploy --only firestore:indexes \
+            --project pub-quiz-ai-sandbox \
+            --non-interactive
 
       - name: Build and Push Container
         run: |

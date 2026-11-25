@@ -10,6 +10,7 @@ const {
   rankLeaderboard,
   computePlayerTelemetry,
   buildMatchBreakdown,
+  BreakdownNotCompleteError,
   parseBreakdownPage,
   BREAKDOWN_PAGE_SIZE,
   listRecentMatchesForUser,
@@ -140,30 +141,21 @@ test('breakdown page size is 5 and page 2 returns the next slice only', () => {
   assert.equal(outOfRange.entries.length, 0);
 });
 
-test('WAITING or ACTIVE breakdown omits verified answer fields; COMPLETED includes them', () => {
+test('buildMatchBreakdown rejects non-COMPLETED rooms; COMPLETED includes grading fields', () => {
   const room = fixtureRoom({ status: 'ACTIVE', dealQuestions: fixtureRoom().dealQuestions.slice(0, 1) });
   const secrets = fixtureSecrets({
     secretQuestions: fixtureSecrets().secretQuestions.slice(0, 1),
     responses: [],
   });
-  const active = buildMatchBreakdown({ room, secrets, userId: 'fast-user', page: 1 });
-  for (const entry of active.entries) {
-    for (const key of SECRET_KEYS) {
-      assert.equal(entry[key], undefined);
-    }
-    assert.equal(entry.isCorrect, undefined);
-    assert.equal(entry.pointsAwarded, undefined);
-    assert.equal(entry.selectedAnswerId, undefined);
-  }
+  assert.throws(
+    () => buildMatchBreakdown({ room, secrets, userId: 'fast-user', page: 1 }),
+    BreakdownNotCompleteError,
+  );
   room.status = 'WAITING';
-  const waiting = buildMatchBreakdown({ room, secrets, userId: 'fast-user', page: 1 });
-  for (const entry of waiting.entries) {
-    for (const key of SECRET_KEYS) {
-      assert.equal(entry[key], undefined);
-    }
-    assert.equal(entry.isCorrect, undefined);
-    assert.equal(entry.pointsAwarded, undefined);
-  }
+  assert.throws(
+    () => buildMatchBreakdown({ room, secrets, userId: 'fast-user', page: 1 }),
+    BreakdownNotCompleteError,
+  );
   room.status = 'COMPLETED';
   const completed = buildMatchBreakdown({ room, secrets, userId: 'fast-user', page: 1 });
   assert.equal(completed.entries[0].correctAnswerId, 'A');

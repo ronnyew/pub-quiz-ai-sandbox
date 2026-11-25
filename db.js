@@ -1030,6 +1030,18 @@ function resetGameRoomSecretsForTest() {
   memory.gameRoomSecrets.clear();
 }
 
+function isFirestoreIndexPreconditionError(err) {
+  if (!err || typeof err !== 'object') {
+    return false;
+  }
+  const code = err.code;
+  if (code === 9 || code === 'failed-precondition' || code === 'FAILED_PRECONDITION') {
+    return true;
+  }
+  const details = String(err.details || err.message || '').toLowerCase();
+  return details.includes('requires an index') || details.includes('index is currently building');
+}
+
 async function listGameRoomsForUser(userId, { limit = 50, status = 'COMPLETED' } = {}) {
   if (typeof userId !== 'string' || userId.trim() === '') {
     throw new TypeError('invalid userId');
@@ -1046,16 +1058,29 @@ async function listGameRoomsForUser(userId, { limit = 50, status = 'COMPLETED' }
     if (effectiveStatus !== 'ALL') {
       query = query.where('status', '==', effectiveStatus);
     }
-    const snapshot = await query.orderBy('createdAt', 'desc').limit(limit).get();
-    const matches = [];
-    for (const doc of snapshot.docs) {
-      try {
-        matches.push(sanitizeGameRoomForStorage({ ...doc.data(), roomId: doc.id }));
-      } catch {
-        /* skip invalid persisted room */
+    try {
+      const snapshot = await query.orderBy('createdAt', 'desc').limit(limit).get();
+      const matches = [];
+      for (const doc of snapshot.docs) {
+        try {
+          matches.push(sanitizeGameRoomForStorage({ ...doc.data(), roomId: doc.id }));
+        } catch {
+          /* skip invalid persisted room */
+        }
       }
+      return matches;
+    } catch (err) {
+      if (isFirestoreIndexPreconditionError(err)) {
+        if (process.env.NODE_ENV !== 'test') {
+          console.warn(
+            '[db] listGameRoomsForUser: Firestore composite index missing or building '
+            + '(game_rooms: playerIds ARRAY_CONTAINS, status, createdAt DESC); returning empty list',
+          );
+        }
+        return [];
+      }
+      throw err;
     }
-    return matches;
   }
   ensureGameRoomsHydrated();
   const matches = [];
